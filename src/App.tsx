@@ -15,7 +15,7 @@ import {
 
 type StudioMode = 'quick' | 'workflow' | 'prompt' | 'agent' | 'pipeline';
 
-function getDefaultModeForExperience(experienceMode: 'beginner' | 'advanced'): StudioMode {
+function getDefaultModeForExperience(_experienceMode: 'beginner' | 'advanced'): StudioMode {
   return 'agent';
 }
 

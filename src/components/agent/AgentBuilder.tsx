@@ -355,6 +355,12 @@ function isCalculatorRequest(input: string): boolean {
   return /(calculator|kalkulator|calc\b|hitung)/i.test(input);
 }
 
+function isBuildIntent(input: string): boolean {
+  return /(buat|bikin|build|create|develop|design|ui|ux|landing|website|web|app|aplikasi|dashboard|prototype|komponen|component|react|html|css|js|javascript|kode|code)/i.test(
+    input
+  );
+}
+
 function buildPremiumCalculatorResponse(userGoal: string, designTarget: DesignTarget): string {
   const targetLabel =
     designTarget === 'mobile'
@@ -856,7 +862,7 @@ export function AgentBuilder() {
 
   useEffect(() => {
     if (!designMode) {
-      setPreviewStatus('Design mode is off. Turn it on to generate and preview UI/UX layouts.');
+      setPreviewStatus('Builder mode on demand. Send a build prompt and code + preview will be generated automatically.');
       return;
     }
 
@@ -1075,6 +1081,10 @@ export function AgentBuilder() {
     }
 
     const messageInput = chatInput.trim();
+    const inferredTarget = inferDesignMode(messageInput).designTarget;
+    const effectiveDesignTarget = designMode ? designTarget : inferredTarget;
+    const alwaysBuilderMode = true;
+    const shouldGenerateCode = alwaysBuilderMode || designMode || isBuildIntent(messageInput);
     const userMessage: Message = { role: 'user', content: messageInput };
     addAgentMessage(userMessage);
     setChatInput('');
@@ -1091,12 +1101,16 @@ export function AgentBuilder() {
       ? `${messageInput}\n\nTool Outputs:\n${toolContext}`
       : messageInput;
 
-    const messageForModel = designMode
-      ? `${baseMessageForModel}\n\n${buildDesignExecutionBrief(messageInput, designTarget)}`
+    const messageForModel = shouldGenerateCode
+      ? `${baseMessageForModel}\n\n${buildDesignExecutionBrief(messageInput, effectiveDesignTarget)}`
       : baseMessageForModel;
 
+    const runtimeSystemPrompt = shouldGenerateCode
+      ? `${generatedSystemPrompt}\n\n${buildDesignSystemInstruction(effectiveDesignTarget)}`
+      : generatedSystemPrompt;
+
     const messages = [
-      { role: 'system' as const, content: generatedSystemPrompt },
+      { role: 'system' as const, content: runtimeSystemPrompt },
       ...agentMessages.map((message) => ({
         role: message.role as 'user' | 'assistant',
         content: message.content,
@@ -1108,8 +1122,8 @@ export function AgentBuilder() {
       apiKey,
       selectedModel,
       messages,
-      designMode ? 0.85 : 0.7,
-      designMode ? 3200 : 2000
+      shouldGenerateCode ? 0.85 : 0.7,
+      shouldGenerateCode ? 3200 : 2000
     );
 
     if (response.error) {
@@ -1119,14 +1133,14 @@ export function AgentBuilder() {
         title: 'Agent response failed',
         message: response.error,
       });
-      if (designMode) {
+      if (shouldGenerateCode) {
         setPreviewStatus('Design preview failed to update because the latest response returned an error.');
       }
     } else {
       let assistantContent = response.content;
-      let preview = designMode ? buildPreviewDocument(response.content) : null;
+      let preview = shouldGenerateCode ? buildPreviewDocument(response.content) : null;
 
-      if (designMode && !preview) {
+      if (shouldGenerateCode && !preview) {
         const repairInstruction = [
           'Reformat your previous answer into renderable code now.',
           'Return in this exact order:',
@@ -1158,8 +1172,8 @@ export function AgentBuilder() {
         }
       }
 
-      if (designMode && preview && isLowFidelityDesign(preview.code)) {
-        const polishInstruction = buildDesignPolishInstruction(messageInput, designTarget);
+      if (shouldGenerateCode && preview && isLowFidelityDesign(preview.code)) {
+        const polishInstruction = buildDesignPolishInstruction(messageInput, effectiveDesignTarget);
         const polished = await callOxloAPI(
           apiKey,
           selectedModel,
@@ -1188,10 +1202,10 @@ export function AgentBuilder() {
         }
       }
 
-      if (designMode && isCalculatorRequest(messageInput)) {
+      if (shouldGenerateCode && isCalculatorRequest(messageInput)) {
         const calculatorNeedsUpgrade = !preview || isLowFidelityDesign(preview.code);
         if (calculatorNeedsUpgrade) {
-          const premiumCalculatorResponse = buildPremiumCalculatorResponse(messageInput, designTarget);
+          const premiumCalculatorResponse = buildPremiumCalculatorResponse(messageInput, effectiveDesignTarget);
           const premiumPreview = buildPreviewDocument(premiumCalculatorResponse);
           if (premiumPreview) {
             assistantContent = premiumCalculatorResponse;
@@ -1203,7 +1217,7 @@ export function AgentBuilder() {
 
       addAgentMessage({ role: 'assistant', content: assistantContent });
 
-      if (designMode) {
+      if (shouldGenerateCode) {
         if (preview) {
           setPreviewSrcDoc(preview.srcDoc);
           setPreviewCode(preview.code);
