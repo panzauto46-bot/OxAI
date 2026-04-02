@@ -50,6 +50,10 @@ export interface GitHubUser {
   email: string | null;
 }
 
+function normalizeApiKey(key: string): string {
+  return key.replace(/\s+/g, '').trim();
+}
+
 interface OxAIState {
   // Navigation
   activeMode: 'workflow' | 'prompt' | 'agent' | 'pipeline';
@@ -133,7 +137,7 @@ export const useStore = create<OxAIState>()(
 
       // API Key
       apiKey: '',
-      setApiKey: (key) => set({ apiKey: key }),
+      setApiKey: (key) => set({ apiKey: normalizeApiKey(key) }),
 
       // Workflow Builder
       workflows: [],

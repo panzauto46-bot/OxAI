@@ -14,12 +14,13 @@ export function Header({ onOpenSidebar }: HeaderProps) {
   const [tempKey, setTempKey] = useState(apiKey);
 
   const handleSaveKey = () => {
-    setApiKey(tempKey.trim());
+    const normalizedKey = tempKey.replace(/\s+/g, '').trim();
+    setApiKey(normalizedKey);
     setShowKeyInput(false);
     addToast({
       type: 'success',
       title: 'API key updated',
-      message: tempKey.trim() ? 'Oxlo.ai API key saved locally.' : 'API key cleared.',
+      message: normalizedKey ? 'Oxlo.ai API key saved locally.' : 'API key cleared.',
     });
   };
 

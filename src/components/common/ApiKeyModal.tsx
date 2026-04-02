@@ -16,7 +16,7 @@ export function ApiKeyModal({ isOpen, onClose }: ApiKeyModalProps) {
   if (!isOpen) return null;
 
   const handleSave = () => {
-    setApiKey(tempKey);
+    setApiKey(tempKey.replace(/\s+/g, '').trim());
     onClose();
   };
 

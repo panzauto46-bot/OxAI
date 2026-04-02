@@ -57,7 +57,16 @@ function mapHttpError(status: number, apiMessage: string): {
 async function parseErrorMessage(response: Response): Promise<string> {
   const fallback = `API Error: ${response.status}`;
   try {
-    const data = await response.json();
+    const raw = await response.text();
+    if (!raw) return fallback;
+
+    let data: any = null;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return raw || fallback;
+    }
+
     return (
       data?.error?.message ||
       data?.message ||
@@ -72,6 +81,10 @@ async function parseErrorMessage(response: Response): Promise<string> {
       return fallback;
     }
   }
+}
+
+function normalizeApiKey(apiKey: string): string {
+  return apiKey.replace(/\s+/g, '').trim();
 }
 
 function mapUnknownError(error: unknown): {
@@ -113,6 +126,7 @@ export async function callOxloAPI(
   const startTime = Date.now();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const normalizedApiKey = normalizeApiKey(apiKey);
   
   try {
     const response = await fetch(OXLO_PROXY_URL, {
@@ -121,7 +135,7 @@ export async function callOxloAPI(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        apiKey,
+        apiKey: normalizedApiKey,
         model,
         messages,
         temperature,

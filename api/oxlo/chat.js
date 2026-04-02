@@ -22,6 +22,12 @@ function normalizeMaxTokens(value) {
   return Math.max(1, Math.floor(value));
 }
 
+function normalizeApiKey(value) {
+  if (typeof value !== 'string') return '';
+  // Remove hidden whitespace/newlines that can break Authorization header parsing.
+  return value.replace(/\s+/g, '').trim();
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { message: 'Method not allowed.' } });
@@ -29,7 +35,7 @@ export default async function handler(req, res) {
   }
 
   const body = parseBody(req.body);
-  const apiKey = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
+  const apiKey = normalizeApiKey(body.apiKey);
   const model = typeof body.model === 'string' ? body.model.trim() : '';
   const messages = Array.isArray(body.messages) ? body.messages : [];
   const temperature = normalizeTemperature(body.temperature);
