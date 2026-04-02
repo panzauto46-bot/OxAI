@@ -244,6 +244,14 @@ ${htmlSource || '<main style="padding:24px"><p>No HTML code found.</p></main>'}
 }
 
 type DesignTarget = 'web' | 'mobile' | 'responsive';
+const PREVIEW_PANEL_DEFAULT_WIDTH = 420;
+const PREVIEW_PANEL_MIN_WIDTH = 320;
+const PREVIEW_PANEL_MAX_WIDTH = 900;
+const CHAT_PANEL_MIN_WIDTH = 420;
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
 
 function getDesignTargetLabel(target: DesignTarget): string {
   if (target === 'mobile') return 'mobile-first app interface';
@@ -769,7 +777,10 @@ export function AgentBuilder() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [snippetCopied, setSnippetCopied] = useState(false);
   const [sharedImportError, setSharedImportError] = useState<string | null>(null);
+  const [previewPanelWidth, setPreviewPanelWidth] = useState(PREVIEW_PANEL_DEFAULT_WIDTH);
+  const [isResizingPreview, setIsResizingPreview] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const previewResizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   const generatedSystemPrompt = useMemo(() => {
     const activeTools = selectedTools
@@ -856,6 +867,87 @@ export function AgentBuilder() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [agentMessages]);
+
+  useEffect(() => {
+    const adjustWidthWithinViewport = () => {
+      const viewportLimit = Math.max(
+        PREVIEW_PANEL_MIN_WIDTH,
+        window.innerWidth - CHAT_PANEL_MIN_WIDTH - 100
+      );
+      const maxWidth = Math.min(PREVIEW_PANEL_MAX_WIDTH, viewportLimit);
+      setPreviewPanelWidth((previous) => clampNumber(previous, PREVIEW_PANEL_MIN_WIDTH, maxWidth));
+    };
+
+    adjustWidthWithinViewport();
+    window.addEventListener('resize', adjustWidthWithinViewport);
+    return () => window.removeEventListener('resize', adjustWidthWithinViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!isResizingPreview) return;
+
+    const onPointerMove = (event: PointerEvent) => {
+      const state = previewResizeRef.current;
+      if (!state) return;
+
+      const viewportLimit = Math.max(
+        PREVIEW_PANEL_MIN_WIDTH,
+        window.innerWidth - CHAT_PANEL_MIN_WIDTH - 100
+      );
+      const maxWidth = Math.min(PREVIEW_PANEL_MAX_WIDTH, viewportLimit);
+      const deltaX = event.clientX - state.startX;
+      const nextWidth = clampNumber(
+        state.startWidth - deltaX,
+        PREVIEW_PANEL_MIN_WIDTH,
+        maxWidth
+      );
+      setPreviewPanelWidth(nextWidth);
+    };
+
+    const stopResize = () => {
+      previewResizeRef.current = null;
+      setIsResizingPreview(false);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', stopResize);
+    window.addEventListener('pointercancel', stopResize);
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', stopResize);
+      window.removeEventListener('pointercancel', stopResize);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [isResizingPreview]);
+
+  const handleStartPreviewResize = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (window.innerWidth < 1280) return;
+    previewResizeRef.current = {
+      startX: event.clientX,
+      startWidth: previewPanelWidth,
+    };
+    setIsResizingPreview(true);
+    event.preventDefault();
+  };
+
+  const handlePreviewResizeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (window.innerWidth < 1280) return;
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const delta = event.key === 'ArrowLeft' ? 28 : -28;
+    const viewportLimit = Math.max(
+      PREVIEW_PANEL_MIN_WIDTH,
+      window.innerWidth - CHAT_PANEL_MIN_WIDTH - 100
+    );
+    const maxWidth = Math.min(PREVIEW_PANEL_MAX_WIDTH, viewportLimit);
+    setPreviewPanelWidth((previous) =>
+      clampNumber(previous + delta, PREVIEW_PANEL_MIN_WIDTH, maxWidth)
+    );
+  };
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -1526,7 +1618,26 @@ export function AgentBuilder() {
             </div>
           </div>
 
-          <aside className="w-full xl:w-[420px] border-t xl:border-t-0 xl:border-l border-slate-800 flex flex-col bg-slate-900/50">
+          <div
+            className={`hidden xl:flex w-2 items-center justify-center border-l border-slate-800/70 cursor-col-resize transition-colors ${
+              isResizingPreview ? 'bg-emerald-500/20' : 'bg-slate-900/20 hover:bg-emerald-500/10'
+            }`}
+            onPointerDown={handleStartPreviewResize}
+            onKeyDown={handlePreviewResizeKeyDown}
+            onDoubleClick={() => setPreviewPanelWidth(PREVIEW_PANEL_DEFAULT_WIDTH)}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize preview panel"
+            tabIndex={0}
+            title="Drag to resize preview panel"
+          >
+            <span className="h-14 w-[3px] rounded-full bg-slate-600/80" />
+          </div>
+
+          <aside
+            className="w-full xl:w-[var(--preview-panel-width)] xl:min-w-[320px] xl:max-w-[900px] border-t xl:border-t-0 xl:border-l border-slate-800 flex flex-col bg-slate-900/50"
+            style={{ ['--preview-panel-width' as any]: `${previewPanelWidth}px` }}
+          >
             <div className="p-4 border-b border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
