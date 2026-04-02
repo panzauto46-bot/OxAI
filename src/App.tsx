@@ -16,7 +16,7 @@ import {
 type StudioMode = 'quick' | 'workflow' | 'prompt' | 'agent' | 'pipeline';
 
 function getDefaultModeForExperience(experienceMode: 'beginner' | 'advanced'): StudioMode {
-  return experienceMode === 'beginner' ? 'quick' : 'workflow';
+  return 'agent';
 }
 
 function isStudioMode(value: string): value is StudioMode {
@@ -153,6 +153,13 @@ function App() {
       if (hash.startsWith('#workflow=')) {
         setActiveMode('workflow');
         setShowLanding(false);
+        return;
+      }
+
+      if (plainHash === 'quick') {
+        setActiveMode('agent');
+        setShowLanding(false);
+        window.location.hash = '#agent';
         return;
       }
 

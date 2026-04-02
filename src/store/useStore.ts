@@ -112,7 +112,7 @@ export const useStore = create<OxAIState>()(
   persist(
     (set) => ({
       // Navigation
-      activeMode: 'quick',
+      activeMode: 'agent',
       setActiveMode: (mode) => set({ activeMode: mode }),
       experienceMode: 'beginner',
       setExperienceMode: (mode) => set({ experienceMode: mode }),
@@ -125,7 +125,7 @@ export const useStore = create<OxAIState>()(
           localStorage.removeItem('oxai-onboarding-dismissed');
         }
         set({
-          activeMode: 'quick',
+          activeMode: 'agent',
           experienceMode: 'beginner',
           language: 'en',
           githubUser: null,
