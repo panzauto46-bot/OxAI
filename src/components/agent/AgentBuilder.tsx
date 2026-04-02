@@ -29,6 +29,15 @@ import { useAvailableModels } from '../../hooks/useAvailableModels';
 
 const agentTemplates = [
   {
+    id: 'app-builder',
+    name: 'App Builder',
+    icon: Code,
+    persona: 'You are a senior software engineer and product builder.',
+    instructions:
+      'Build practical web/mobile app solutions. Return implementation-ready plans and code-focused answers that can be executed step-by-step.',
+    tools: ['code-analyzer', 'calculator'],
+  },
+  {
     id: 'customer-support',
     name: 'Customer Support',
     icon: MessageSquare,
@@ -248,6 +257,27 @@ interface AgentBlueprint {
 }
 
 const templateKeywordMap: Record<string, string[]> = {
+  'app-builder': [
+    'build',
+    'builder',
+    'create app',
+    'develop',
+    'app',
+    'application',
+    'aplikasi',
+    'website',
+    'web',
+    'frontend',
+    'backend',
+    'mobile',
+    'android',
+    'ios',
+    'dashboard',
+    'tool',
+    'calculator',
+    'kalkulator',
+    'kode',
+  ],
   'customer-support': ['support', 'customer', 'ticket', 'refund', 'help', 'cs', 'layanan'],
   'research-assistant': ['research', 'market', 'analyst', 'analysis', 'compare', 'riset'],
   'code-reviewer': ['code', 'coding', 'debug', 'developer', 'program', 'script', 'bug'],
@@ -274,7 +304,7 @@ function buildAgentName(goal: string, fallback: string): string {
 
 function inferDesignMode(goal: string): { designMode: boolean; designTarget: DesignTarget } {
   const lower = goal.toLowerCase();
-  const isDesign = /(ui|ux|web|website|landing|mobile|app|design|figma)/.test(lower);
+  const isDesign = /(ui|ux|web|website|landing|mobile|app|aplikasi|design|figma)/.test(lower);
   if (!isDesign) {
     return { designMode: false, designTarget: 'responsive' };
   }
@@ -398,25 +428,36 @@ export function AgentBuilder() {
     ].join('\n\n');
   }, [persona, instructions, selectedTools, designMode, designTarget]);
 
-  const applyGoalPrompt = useCallback((goalPrompt: string, source: 'auto' | 'manual') => {
-    const trimmedGoal = goalPrompt.trim();
-    if (!trimmedGoal) return;
+  const applyGoalPrompt = useCallback(
+    (goalPrompt: string, source: 'auto' | 'manual') => {
+      const trimmedGoal = goalPrompt.trim();
+      if (!trimmedGoal) return;
 
-    const blueprint = inferAgentBlueprint(trimmedGoal);
-    setAgentName(blueprint.name);
-    setPersona(blueprint.persona);
-    setInstructions(blueprint.instructions);
-    setSelectedTools(blueprint.tools);
-    setDesignMode(blueprint.designMode);
-    setDesignTarget(blueprint.designTarget);
-    setLastTemplateName(blueprint.templateName);
-    lastAutoGoalRef.current = trimmedGoal;
-    setAutoAgentStatus(
-      source === 'auto'
-        ? `Auto-configured with ${blueprint.templateName} template.`
-        : `Applied ${blueprint.templateName} template from your goal prompt.`
-    );
-  }, []);
+      const blueprint = inferAgentBlueprint(trimmedGoal);
+      setAgentName(blueprint.name);
+      setPersona(blueprint.persona);
+      setInstructions(blueprint.instructions);
+      setSelectedTools(blueprint.tools);
+      setDesignMode(blueprint.designMode);
+      setDesignTarget(blueprint.designTarget);
+      setLastTemplateName(blueprint.templateName);
+      lastAutoGoalRef.current = trimmedGoal;
+      setAutoAgentStatus(
+        source === 'auto'
+          ? `Auto-configured with ${blueprint.templateName} template.`
+          : `Applied ${blueprint.templateName} template from your goal prompt.`
+      );
+
+      if (source === 'manual') {
+        addToast({
+          type: 'success',
+          title: 'Agent updated',
+          message: `${blueprint.templateName} template applied.`,
+        });
+      }
+    },
+    [addToast]
+  );
 
   useEffect(() => {
     const validIds = new Set(availableModels.map((model) => model.id));
