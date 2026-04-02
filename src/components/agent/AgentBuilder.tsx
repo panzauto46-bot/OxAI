@@ -776,6 +776,7 @@ export function AgentBuilder() {
   const [embedSnippet, setEmbedSnippet] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
   const [snippetCopied, setSnippetCopied] = useState(false);
+  const [centerPanelMode, setCenterPanelMode] = useState<'chat' | 'code'>('chat');
   const [sharedImportError, setSharedImportError] = useState<string | null>(null);
   const [previewPanelWidth, setPreviewPanelWidth] = useState(PREVIEW_PANEL_DEFAULT_WIDTH);
   const [isResizingPreview, setIsResizingPreview] = useState(false);
@@ -867,6 +868,11 @@ export function AgentBuilder() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [agentMessages]);
+
+  useEffect(() => {
+    if (!previewCode.trim()) return;
+    setCenterPanelMode('code');
+  }, [previewCode]);
 
   useEffect(() => {
     const adjustWidthWithinViewport = () => {
@@ -1552,11 +1558,35 @@ export function AgentBuilder() {
         <div className="flex-1 min-w-0 flex flex-col xl:flex-row bg-slate-950/50">
           <div className="flex-1 flex flex-col min-h-0">
             <div className="p-4 border-b border-slate-800">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-emerald-400" />
-                Test Agent
-              </h3>
-              <p className="text-sm text-slate-400">Try your agent in a live chat</p>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-emerald-400" />
+                    Test Agent
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    {centerPanelMode === 'chat'
+                      ? 'Try your agent in a live chat'
+                      : 'Live generated code from your latest build prompt'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={centerPanelMode === 'chat' ? 'primary' : 'secondary'}
+                    onClick={() => setCenterPanelMode('chat')}
+                  >
+                    Chat
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={centerPanelMode === 'code' ? 'primary' : 'secondary'}
+                    onClick={() => setCenterPanelMode('code')}
+                  >
+                    Code
+                  </Button>
+                </div>
+              </div>
               {toolTraces.length > 0 && (
                 <div className="mt-3 space-y-1">
                   {toolTraces.map((trace, index) => (
@@ -1569,37 +1599,59 @@ export function AgentBuilder() {
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {agentMessages.length === 0 && (
-                <div className="text-center py-12">
-                  <Bot className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-                  <p className="text-slate-500">Start a conversation with your agent</p>
+            <div className="flex-1 overflow-y-auto p-4">
+              {centerPanelMode === 'code' ? (
+                previewCode.trim() ? (
+                  <div className="h-full rounded-xl border border-slate-700 bg-slate-950/80 overflow-hidden flex flex-col">
+                    <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-300">Live Code</span>
+                      <Button size="sm" variant="secondary" onClick={handleCopyPreviewCode}>
+                        {previewCodeCopied ? 'Copied' : 'Copy Code'}
+                      </Button>
+                    </div>
+                    <pre className="flex-1 overflow-auto p-4 text-xs leading-6 text-emerald-100 font-mono whitespace-pre-wrap">
+                      {previewCode}
+                    </pre>
+                  </div>
+                ) : (
+                  <div className="h-full min-h-[260px] rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-400">
+                    Send a build prompt first. Generated code will appear here automatically.
+                  </div>
+                )
+              ) : (
+                <div className="space-y-4">
+                  {agentMessages.length === 0 && (
+                    <div className="text-center py-12">
+                      <Bot className="w-16 h-16 text-slate-700 mx-auto mb-4" />
+                      <p className="text-slate-500">Start a conversation with your agent</p>
+                    </div>
+                  )}
+                  {agentMessages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                          message.role === 'user'
+                            ? 'bg-emerald-600 text-white rounded-br-md'
+                            : 'bg-slate-800 text-slate-200 rounded-bl-md'
+                        }`}
+                      >
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-slate-800 px-4 py-3 rounded-2xl rounded-bl-md">
+                        <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
+                      </div>
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
                 </div>
               )}
-              {agentMessages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-                      message.role === 'user'
-                        ? 'bg-emerald-600 text-white rounded-br-md'
-                        : 'bg-slate-800 text-slate-200 rounded-bl-md'
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                  </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-slate-800 px-4 py-3 rounded-2xl rounded-bl-md">
-                    <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
-                  </div>
-                </div>
-              )}
-              <div ref={chatEndRef} />
             </div>
 
             <div className="p-4 border-t border-slate-800">
