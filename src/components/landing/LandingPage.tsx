@@ -8,13 +8,14 @@ import {
   Sparkles,
   Wand2,
   Workflow,
+  Rocket,
   type LucideIcon,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { cn } from '../../utils/cn';
 import type { GitHubUser } from '../../store/useStore';
 
-type StudioMode = 'workflow' | 'prompt' | 'agent' | 'pipeline';
+type StudioMode = 'quick' | 'workflow' | 'prompt' | 'agent' | 'pipeline';
 
 interface LandingPageProps {
   onEnterStudio: (mode?: StudioMode) => void;
@@ -31,6 +32,12 @@ interface ModuleCard {
 }
 
 const modules: ModuleCard[] = [
+  {
+    mode: 'quick',
+    title: 'Quick Builder',
+    description: '3-step AI assistant for beginners',
+    icon: Rocket,
+  },
   {
     mode: 'workflow',
     title: 'Workflow Builder',
@@ -91,7 +98,7 @@ export function LandingPage({
             </div>
           </div>
           {githubUser ? (
-            <Button size="sm" onClick={() => onEnterStudio('workflow')}>
+            <Button size="sm" onClick={() => onEnterStudio('quick')}>
               Enter Studio
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -132,7 +139,7 @@ export function LandingPage({
             <div className="flex flex-wrap gap-3">
               {githubUser ? (
                 <>
-                  <Button size="lg" onClick={() => onEnterStudio('workflow')}>
+                  <Button size="lg" onClick={() => onEnterStudio('quick')}>
                     Start Building
                     <ArrowRight className="h-4 w-4" />
                   </Button>

@@ -1,9 +1,13 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { HelpCircle, X } from 'lucide-react';
 
-type Mode = 'workflow' | 'prompt' | 'agent' | 'pipeline';
+type Mode = 'quick' | 'workflow' | 'prompt' | 'agent' | 'pipeline';
 
 const tipsByMode: Record<Mode, { title: string; tip: string }> = {
+  quick: {
+    title: 'Quick Builder Tip',
+    tip: 'Isi kebutuhan dengan bahasa biasa lalu klik Generate Preview untuk hasil cepat.',
+  },
   workflow: {
     title: 'Workflow Builder Tip',
     tip: 'Use Ctrl+S to save workflow and Ctrl+Enter to run execution quickly.',

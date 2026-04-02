@@ -13,7 +13,15 @@ import {
   readOAuthParamsFromUrl,
 } from './services/githubAuth';
 
-type StudioMode = 'workflow' | 'prompt' | 'agent' | 'pipeline';
+type StudioMode = 'quick' | 'workflow' | 'prompt' | 'agent' | 'pipeline';
+
+function getDefaultModeForExperience(experienceMode: 'beginner' | 'advanced'): StudioMode {
+  return experienceMode === 'beginner' ? 'quick' : 'workflow';
+}
+
+function isStudioMode(value: string): value is StudioMode {
+  return value === 'quick' || value === 'workflow' || value === 'prompt' || value === 'agent' || value === 'pipeline';
+}
 
 const WorkflowBuilder = lazy(() =>
   import('./components/workflow/WorkflowBuilder').then((module) => ({
@@ -39,6 +47,12 @@ const ContentPipeline = lazy(() =>
   }))
 );
 
+const QuickBuilder = lazy(() =>
+  import('./components/quick/QuickBuilder').then((module) => ({
+    default: module.QuickBuilder,
+  }))
+);
+
 function ModuleSkeleton() {
   return (
     <div className="h-full p-4 md:p-6">
@@ -53,7 +67,7 @@ function ModuleSkeleton() {
 }
 
 function App() {
-  const { activeMode, setActiveMode, setGithubUser, addToast, githubUser } = useStore();
+  const { activeMode, setActiveMode, setGithubUser, addToast, githubUser, experienceMode } = useStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
   const [isGitHubRedirecting, setIsGitHubRedirecting] = useState(false);
@@ -99,9 +113,10 @@ function App() {
         }
 
         setGithubUser(payload.user);
-        setActiveMode('workflow');
+        const nextMode = getDefaultModeForExperience(experienceMode);
+        setActiveMode(nextMode);
         setShowLanding(false);
-        window.location.hash = '#workflow';
+        window.location.hash = `#${nextMode}`;
         addToast({
           type: 'success',
           title: 'GitHub connected',
@@ -117,7 +132,7 @@ function App() {
     };
 
     void exchangeCode();
-  }, [addToast, setActiveMode, setGithubUser]);
+  }, [addToast, experienceMode, setActiveMode, setGithubUser]);
 
   useEffect(() => {
     const syncFromHash = () => {
@@ -141,13 +156,14 @@ function App() {
         return;
       }
 
-      if (plainHash === 'workflow' || plainHash === 'prompt' || plainHash === 'agent' || plainHash === 'pipeline') {
-        setActiveMode(plainHash as StudioMode);
+      if (isStudioMode(plainHash)) {
+        setActiveMode(plainHash);
         setShowLanding(false);
         return;
       }
 
       if (plainHash === 'studio') {
+        setActiveMode(getDefaultModeForExperience(experienceMode));
         setShowLanding(false);
         return;
       }
@@ -158,7 +174,7 @@ function App() {
     syncFromHash();
     window.addEventListener('hashchange', syncFromHash);
     return () => window.removeEventListener('hashchange', syncFromHash);
-  }, [githubUser, setActiveMode]);
+  }, [experienceMode, githubUser, setActiveMode]);
 
   useEffect(() => {
     const onResize = () => {
@@ -180,12 +196,9 @@ function App() {
       return;
     }
 
-    if (mode) {
-      setActiveMode(mode);
-      window.location.hash = `#${mode}`;
-    } else {
-      window.location.hash = '#studio';
-    }
+    const nextMode = mode || getDefaultModeForExperience(experienceMode);
+    setActiveMode(nextMode);
+    window.location.hash = `#${nextMode}`;
     setShowLanding(false);
   };
 
@@ -235,6 +248,7 @@ function App() {
         <OnboardingTips mode={activeMode} />
         <main className="flex-1 overflow-hidden animate-fade-in-up">
           <Suspense fallback={<ModuleSkeleton />}>
+            {activeMode === 'quick' && <QuickBuilder />}
             {activeMode === 'workflow' && <WorkflowBuilder />}
             {activeMode === 'prompt' && <PromptStudio />}
             {activeMode === 'agent' && <AgentBuilder />}

@@ -56,8 +56,10 @@ function normalizeApiKey(key: string): string {
 
 interface OxAIState {
   // Navigation
-  activeMode: 'workflow' | 'prompt' | 'agent' | 'pipeline';
-  setActiveMode: (mode: 'workflow' | 'prompt' | 'agent' | 'pipeline') => void;
+  activeMode: 'quick' | 'workflow' | 'prompt' | 'agent' | 'pipeline';
+  setActiveMode: (mode: 'quick' | 'workflow' | 'prompt' | 'agent' | 'pipeline') => void;
+  experienceMode: 'beginner' | 'advanced';
+  setExperienceMode: (mode: 'beginner' | 'advanced') => void;
   logout: () => void;
 
   // Auth
@@ -108,8 +110,10 @@ export const useStore = create<OxAIState>()(
   persist(
     (set) => ({
       // Navigation
-      activeMode: 'workflow',
+      activeMode: 'quick',
       setActiveMode: (mode) => set({ activeMode: mode }),
+      experienceMode: 'beginner',
+      setExperienceMode: (mode) => set({ experienceMode: mode }),
       logout: () => {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('oxai-storage');
@@ -117,7 +121,8 @@ export const useStore = create<OxAIState>()(
           localStorage.removeItem('oxai-onboarding-dismissed');
         }
         set({
-          activeMode: 'workflow',
+          activeMode: 'quick',
+          experienceMode: 'beginner',
           githubUser: null,
           apiKey: '',
           workflows: [],
@@ -221,6 +226,8 @@ export const useStore = create<OxAIState>()(
     {
       name: 'oxai-storage',
       partialize: (state) => ({
+        activeMode: state.activeMode,
+        experienceMode: state.experienceMode,
         githubUser: state.githubUser,
         apiKey: state.apiKey,
         workflows: state.workflows,

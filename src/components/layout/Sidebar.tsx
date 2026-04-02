@@ -1,4 +1,5 @@
 import {
+  Rocket,
   Workflow,
   Wand2,
   Bot,
@@ -12,6 +13,7 @@ import { useStore } from '../../store/useStore';
 import { cn } from '../../utils/cn';
 
 const menuItems = [
+  { id: 'quick', label: 'Quick Builder', icon: Rocket },
   { id: 'workflow', label: 'Workflow Builder', icon: Workflow },
   { id: 'prompt', label: 'Prompt Studio', icon: Wand2 },
   { id: 'agent', label: 'Agent Builder', icon: Bot },
@@ -24,12 +26,35 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { activeMode, setActiveMode, logout, addToast } = useStore();
+  const { activeMode, setActiveMode, experienceMode, setExperienceMode, logout, addToast } = useStore();
 
   const handleSelectMode = (mode: (typeof menuItems)[number]['id']) => {
     setActiveMode(mode);
+    window.location.hash = `#${mode}`;
     onClose();
   };
+
+  const handleToggleExperience = () => {
+    const nextMode = experienceMode === 'beginner' ? 'advanced' : 'beginner';
+    const nextStudio = nextMode === 'beginner' ? 'quick' : 'workflow';
+    setExperienceMode(nextMode);
+    setActiveMode(nextStudio);
+    window.location.hash = `#${nextStudio}`;
+    onClose();
+    addToast({
+      type: 'info',
+      title: nextMode === 'beginner' ? 'Beginner mode active' : 'Advanced mode active',
+      message:
+        nextMode === 'beginner'
+          ? 'UI disederhanakan untuk eksekusi cepat.'
+          : 'Semua fitur teknis ditampilkan.',
+    });
+  };
+
+  const visibleMenuItems =
+    experienceMode === 'beginner'
+      ? menuItems.filter((item) => item.id === 'quick')
+      : menuItems;
 
   const handleLogout = () => {
     const confirmed = window.confirm('Log out now? All local OxAI data in this browser will be deleted.');
@@ -75,7 +100,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {menuItems.map((item) => {
+          {visibleMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeMode === item.id;
             return (
@@ -97,9 +122,25 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               </button>
             );
           })}
+
+          {experienceMode === 'beginner' && (
+            <div className="mt-3 rounded-lg border border-emerald-700/40 bg-emerald-900/20 p-3 text-xs text-emerald-100">
+              <p className="font-medium">Mode Pemula Aktif</p>
+              <p className="mt-1 text-emerald-200/80">Semua menu teknis disembunyikan biar user fokus ke hasil.</p>
+            </div>
+          )}
         </nav>
 
         <div className="p-3 border-t border-slate-800 space-y-1">
+          <button
+            onClick={handleToggleExperience}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-emerald-200 hover:text-white hover:bg-emerald-900/30 transition-all duration-200 md:justify-center md:px-2 md:group-hover:justify-start md:group-hover:px-3 border border-emerald-700/50"
+          >
+            <Rocket className="w-5 h-5" />
+            <span className="md:max-w-0 md:opacity-0 md:overflow-hidden md:group-hover:max-w-[180px] md:group-hover:opacity-100 transition-all duration-200 whitespace-nowrap">
+              {experienceMode === 'beginner' ? 'Switch to Advanced' : 'Switch to Beginner'}
+            </span>
+          </button>
           <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200 md:justify-center md:px-2 md:group-hover:justify-start md:group-hover:px-3">
             <Settings className="w-5 h-5" />
             <span className="md:max-w-0 md:opacity-0 md:overflow-hidden md:group-hover:max-w-[180px] md:group-hover:opacity-100 transition-all duration-200 whitespace-nowrap">
