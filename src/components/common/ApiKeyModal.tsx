@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { Key, ExternalLink, X } from 'lucide-react';
+import { Key, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useStore } from '../../store/useStore';
@@ -37,7 +37,7 @@ export function ApiKeyModal({ isOpen, onClose }: ApiKeyModalProps) {
           </div>
           <div>
             <h2 className="text-xl font-bold text-white">API Key Setup</h2>
-            <p className="text-sm text-slate-400">Connect to Oxlo.ai</p>
+            <p className="text-sm text-slate-400">Connect your own AI provider</p>
           </div>
         </div>
 
@@ -45,7 +45,7 @@ export function ApiKeyModal({ isOpen, onClose }: ApiKeyModalProps) {
           <div>
             <Input
               type="password"
-              label="Oxlo.ai API Key"
+              label="AI Provider API Key"
               value={tempKey}
               onChange={(e) => setTempKey(e.target.value)}
               placeholder="Enter your API key..."
@@ -55,14 +55,9 @@ export function ApiKeyModal({ isOpen, onClose }: ApiKeyModalProps) {
             </p>
           </div>
 
-          <a
-            href="https://oxlo.ai"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
-          >
-            Get your API key from Oxlo.ai <ExternalLink className="w-4 h-4" />
-          </a>
+          <p className="text-sm text-slate-400">
+            Supported providers: OpenAI, Anthropic, Gemini, DeepSeek, Qwen, and Oxlo.
+          </p>
 
           <div className="flex gap-3 pt-2">
             <Button variant="secondary" onClick={onClose} className="flex-1">

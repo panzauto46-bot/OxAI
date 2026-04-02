@@ -1,4 +1,4 @@
-// Oxlo.ai API Service
+// Multi-provider AI API Service
 const OXLO_PROXY_URL = '/api/oxlo/chat';
 const OXLO_MODELS_PROXY_URL = '/api/oxlo/models';
 const DEFAULT_TIMEOUT_MS = 45000;
@@ -8,24 +8,31 @@ export interface ModelOption {
   id: string;
   name: string;
   provider: string;
+  providerId?: string;
 }
 
 interface OxloModelItem {
   id?: string;
   name?: string;
   display_name?: string;
+  provider?: string;
+  provider_id?: string;
   category?: string;
   status?: string;
   coming_soon?: boolean;
 }
 
 interface OxloModelsPayload {
+  provider_id?: string;
+  provider_name?: string;
   data?: OxloModelItem[];
 }
 
 let modelsCache: {
   apiKeyHash: string;
+  providerId: string;
   models: ModelOption[];
+  providerByModelId: Record<string, string>;
   expiresAt: number;
 } | null = null;
 
@@ -45,33 +52,31 @@ export interface ModelResponse {
 }
 
 export const AVAILABLE_MODELS: ModelOption[] = [
-  { id: 'deepseek-r1-70b', name: 'DeepSeek R1 70B', provider: 'DeepSeek' },
-  { id: 'deepseek-v3.2', name: 'DeepSeek V3.2', provider: 'DeepSeek' },
-  { id: 'llama-3.3-70b', name: 'Llama 3.3 70B', provider: 'Meta' },
-  { id: 'qwen-3-32b', name: 'Qwen 3 32B', provider: 'Alibaba' },
-  { id: 'gpt-oss-120b', name: 'GPT-OSS 120B', provider: 'OpenAI/OSS' },
-  { id: 'gpt-oss-20b', name: 'GPT-OSS 20B', provider: 'OpenAI/OSS' },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'Google' },
-  { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
+  { id: 'deepseek-chat', name: 'DeepSeek Chat', provider: 'DeepSeek', providerId: 'deepseek' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', providerId: 'openai' },
+  { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', providerId: 'anthropic' },
+  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', provider: 'Google Gemini', providerId: 'gemini' },
+  { id: 'qwen-plus', name: 'Qwen Plus', provider: 'Qwen', providerId: 'qwen' },
+  { id: 'deepseek-r1-70b', name: 'DeepSeek R1 70B', provider: 'Oxlo.ai', providerId: 'oxlo' },
 ];
 
 export const DEFAULT_MODEL_ID = AVAILABLE_MODELS[0]?.id || 'deepseek-r1-70b';
 
-function inferProviderFromModelId(id: string): string {
+function inferProviderFromModelId(id: string): { provider: string; providerId: string } {
   const normalized = id.toLowerCase();
 
-  if (normalized.includes('claude')) return 'Anthropic';
-  if (normalized.includes('gemini') || normalized.includes('gemma')) return 'Google';
-  if (normalized.includes('deepseek')) return 'DeepSeek';
-  if (normalized.includes('qwen')) return 'Alibaba';
-  if (normalized.includes('llama')) return 'Meta';
-  if (normalized.includes('mistral')) return 'Mistral';
+  if (normalized.includes('claude')) return { provider: 'Anthropic', providerId: 'anthropic' };
+  if (normalized.includes('gemini') || normalized.includes('gemma')) return { provider: 'Google Gemini', providerId: 'gemini' };
+  if (normalized.includes('deepseek')) return { provider: 'DeepSeek', providerId: 'deepseek' };
+  if (normalized.includes('qwen') || normalized.includes('qwq')) return { provider: 'Qwen', providerId: 'qwen' };
+  if (normalized.includes('llama')) return { provider: 'Meta', providerId: 'meta' };
+  if (normalized.includes('mistral')) return { provider: 'Mistral', providerId: 'mistral' };
   if (normalized.includes('gpt') || normalized.includes('o1') || normalized.includes('o3') || normalized.includes('o4')) {
-    return 'OpenAI/OSS';
+    return { provider: 'OpenAI', providerId: 'openai' };
   }
-  if (normalized.includes('glm')) return 'Zhipu';
-  if (normalized.includes('minimax')) return 'MiniMax';
-  return 'Other';
+  if (normalized.includes('glm')) return { provider: 'Zhipu', providerId: 'zhipu' };
+  if (normalized.includes('minimax')) return { provider: 'MiniMax', providerId: 'minimax' };
+  return { provider: 'Other', providerId: 'other' };
 }
 
 function prettifyModelName(id: string): string {
@@ -90,10 +95,19 @@ function toModelOption(item: OxloModelItem): ModelOption | null {
     (typeof item.name === 'string' && item.name.trim()) ||
     prettifyModelName(id);
 
+  const inferred = inferProviderFromModelId(id);
+  const providerId =
+    (typeof item.provider_id === 'string' && item.provider_id.trim().toLowerCase()) ||
+    inferred.providerId;
+  const provider =
+    (typeof item.provider === 'string' && item.provider.trim()) ||
+    inferred.provider;
+
   return {
     id,
     name: displayName,
-    provider: inferProviderFromModelId(id),
+    provider,
+    providerId,
   };
 }
 
@@ -121,7 +135,7 @@ function mapHttpError(status: number, apiMessage: string): {
 } {
   if (status === 401 || status === 403) {
     return {
-      message: 'Invalid API key. Please verify your Oxlo.ai API key and try again.',
+      message: 'Invalid API key. Please verify your provider API key and try again.',
       errorType: 'invalid_api_key',
     };
   }
@@ -205,6 +219,8 @@ export async function fetchAvailableModels(apiKey: string): Promise<ModelOption[
   }
 
   const payload = (await response.json()) as OxloModelsPayload;
+  const providerId =
+    (typeof payload?.provider_id === 'string' && payload.provider_id.trim().toLowerCase()) || 'unknown';
   const sourceModels = Array.isArray(payload?.data) ? payload.data : [];
 
   const remoteModels = uniqueModelsById(
@@ -215,10 +231,18 @@ export async function fetchAvailableModels(apiKey: string): Promise<ModelOption[
   ).sort((a, b) => a.name.localeCompare(b.name));
 
   const resolvedModels = remoteModels.length > 0 ? remoteModels : AVAILABLE_MODELS;
+  const providerByModelId = resolvedModels.reduce<Record<string, string>>((accumulator, model) => {
+    if (model.providerId) {
+      accumulator[model.id] = model.providerId;
+    }
+    return accumulator;
+  }, {});
 
   modelsCache = {
     apiKeyHash,
+    providerId,
     models: resolvedModels,
+    providerByModelId,
     expiresAt: now + MODELS_CACHE_TTL_MS,
   };
 
@@ -265,6 +289,15 @@ export async function callOxloAPI(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   const normalizedApiKey = normalizeApiKey(apiKey);
+  const apiKeyHash = buildApiKeyHash(normalizedApiKey);
+  const cachedProviderHint =
+    modelsCache && modelsCache.apiKeyHash === apiKeyHash
+      ? modelsCache.providerByModelId[model] || modelsCache.providerId
+      : undefined;
+  const inferredProviderHint = inferProviderFromModelId(model).providerId;
+  const providerHint =
+    (cachedProviderHint && cachedProviderHint !== 'unknown' ? cachedProviderHint : undefined) ||
+    (inferredProviderHint !== 'other' ? inferredProviderHint : undefined);
   
   try {
     const response = await fetch(OXLO_PROXY_URL, {
@@ -278,6 +311,7 @@ export async function callOxloAPI(
         messages,
         temperature,
         maxTokens,
+        providerHint,
       }),
       signal: controller.signal,
     });

@@ -1,16 +1,4 @@
-const OXLO_MODELS_URL = 'https://api.oxlo.ai/v1/models';
-
-function parseBody(body) {
-  if (!body) return {};
-  if (typeof body === 'string') {
-    try {
-      return JSON.parse(body);
-    } catch {
-      return {};
-    }
-  }
-  return body;
-}
+import { detectProviderAndModels, normalizeRequestBody } from './providerRouter.js';
 
 function normalizeApiKey(value) {
   if (typeof value !== 'string') return '';
@@ -23,44 +11,26 @@ export default async function handler(req, res) {
     return;
   }
 
-  const body = parseBody(req.body);
+  const body = normalizeRequestBody(req.body);
+  const headers = req.headers && typeof req.headers === 'object' ? req.headers : {};
   const apiKeyFromBody = normalizeApiKey(body.apiKey);
-  const apiKeyFromHeader = normalizeApiKey(req.headers['x-oxlo-api-key']);
+  const apiKeyFromHeader = normalizeApiKey(headers['x-oxlo-api-key']);
   const apiKey = apiKeyFromBody || apiKeyFromHeader;
+  const providerHint = typeof body.providerHint === 'string' ? body.providerHint.trim().toLowerCase() : '';
 
-  try {
-    const headers = {
-      Accept: 'application/json',
-    };
-
-    if (apiKey) {
-      headers.Authorization = `Bearer ${apiKey}`;
-    }
-
-    const upstreamResponse = await fetch(OXLO_MODELS_URL, {
-      method: 'GET',
-      headers,
-    });
-
-    const responseText = await upstreamResponse.text();
-    let payload;
-
-    try {
-      payload = JSON.parse(responseText);
-    } catch {
-      payload = {
-        error: {
-          message: responseText || `Oxlo API Error: ${upstreamResponse.status}`,
-        },
-      };
-    }
-
-    res.status(upstreamResponse.status).json(payload);
-  } catch {
-    res.status(502).json({
+  const detection = await detectProviderAndModels(apiKey, providerHint);
+  if (!detection.ok) {
+    res.status(detection.status || 401).json({
       error: {
-        message: 'Failed to load Oxlo model catalog. Please try again.',
+        message: detection.errorMessage || 'Invalid or unsupported API key.',
       },
     });
+    return;
   }
+
+  res.status(200).json({
+    provider_id: detection.providerId,
+    provider_name: detection.providerName,
+    data: detection.models,
+  });
 }
