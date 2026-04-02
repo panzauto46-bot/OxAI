@@ -14,9 +14,33 @@ export function Header({ onOpenSidebar }: HeaderProps) {
     setApiKey,
     addToast,
     githubUser,
+    language,
+    setLanguage,
   } = useStore();
   const [showKeyInput, setShowKeyInput] = useState(false);
   const [tempKey, setTempKey] = useState(apiKey);
+
+  const text = language === 'id'
+    ? {
+        poweredBy: 'Didukung oleh',
+        visit: 'Kunjungi Oxlo.ai',
+        placeholder: 'Masukkan API key provider',
+        keyUpdatedTitle: 'API key diperbarui',
+        keyUpdatedSaved: 'API key provider disimpan lokal.',
+        keyUpdatedCleared: 'API key dihapus.',
+        apiKeySet: 'API Key Terset',
+        setApiKey: 'Set API Key',
+      }
+    : {
+        poweredBy: 'Powered by',
+        visit: 'Visit Oxlo.ai',
+        placeholder: 'Enter provider API key',
+        keyUpdatedTitle: 'API key updated',
+        keyUpdatedSaved: 'Provider API key saved locally.',
+        keyUpdatedCleared: 'API key cleared.',
+        apiKeySet: 'API Key Set',
+        setApiKey: 'Set API Key',
+      };
 
   const handleSaveKey = () => {
     const normalizedKey = tempKey.replace(/\s+/g, '').trim();
@@ -24,8 +48,8 @@ export function Header({ onOpenSidebar }: HeaderProps) {
     setShowKeyInput(false);
     addToast({
       type: 'success',
-      title: 'API key updated',
-      message: normalizedKey ? 'Provider API key saved locally.' : 'API key cleared.',
+      title: text.keyUpdatedTitle,
+      message: normalizedKey ? text.keyUpdatedSaved : text.keyUpdatedCleared,
     });
   };
 
@@ -40,7 +64,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           <PanelLeftOpen className="w-5 h-5" />
         </button>
         <h2 className="text-xs md:text-sm font-medium text-slate-400 truncate">
-          Powered by <span className="text-emerald-400 font-semibold">Oxlo.ai</span>
+          {text.poweredBy} <span className="text-emerald-400 font-semibold">Oxlo.ai</span>
         </h2>
         <a
           href="https://oxlo.ai"
@@ -48,11 +72,21 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           rel="noopener noreferrer"
           className="hidden sm:flex text-xs text-slate-500 hover:text-emerald-400 items-center gap-1 transition-colors"
         >
-          Visit Oxlo.ai <ExternalLink className="w-3 h-3" />
+          {text.visit} <ExternalLink className="w-3 h-3" />
         </a>
       </div>
 
       <div className="flex items-center gap-2 md:gap-3">
+        <select
+          value={language}
+          onChange={(event) => setLanguage(event.target.value as 'en' | 'id')}
+          className="h-8 rounded-lg border border-slate-700 bg-slate-800/70 px-2 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          aria-label="Language"
+        >
+          <option value="en">English</option>
+          <option value="id">Indonesia</option>
+        </select>
+
         {githubUser && (
           <a
             href={githubUser.profileUrl}
@@ -76,7 +110,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           <div className="flex items-center gap-2">
             <Input
               type="password"
-              placeholder="Enter provider API key"
+              placeholder={text.placeholder}
               value={tempKey}
               onChange={(e) => setTempKey(e.target.value)}
               className="w-40 sm:w-64 md:w-72 py-1.5 text-sm"
@@ -95,7 +129,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
             onClick={() => setShowKeyInput(true)}
           >
             <Key className="w-4 h-4" />
-            <span className="hidden sm:inline">{apiKey ? 'API Key Set' : 'Set API Key'}</span>
+            <span className="hidden sm:inline">{apiKey ? text.apiKeySet : text.setApiKey}</span>
           </Button>
         )}
       </div>

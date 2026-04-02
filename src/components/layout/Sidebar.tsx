@@ -13,11 +13,11 @@ import { useStore } from '../../store/useStore';
 import { cn } from '../../utils/cn';
 
 const menuItems = [
-  { id: 'quick', label: 'Quick Builder', icon: Rocket },
-  { id: 'workflow', label: 'Workflow Builder', icon: Workflow },
-  { id: 'prompt', label: 'Prompt Studio', icon: Wand2 },
-  { id: 'agent', label: 'Agent Builder', icon: Bot },
-  { id: 'pipeline', label: 'Content Pipeline', icon: FileText },
+  { id: 'quick', labelEn: 'Quick Builder', labelId: 'Quick Builder', icon: Rocket },
+  { id: 'workflow', labelEn: 'Workflow Builder', labelId: 'Workflow Builder', icon: Workflow },
+  { id: 'prompt', labelEn: 'Prompt Studio', labelId: 'Prompt Studio', icon: Wand2 },
+  { id: 'agent', labelEn: 'Agent Builder', labelId: 'Agent Builder', icon: Bot },
+  { id: 'pipeline', labelEn: 'Content Pipeline', labelId: 'Content Pipeline', icon: FileText },
 ] as const;
 
 interface SidebarProps {
@@ -26,7 +26,25 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { activeMode, setActiveMode, logout, addToast } = useStore();
+  const { activeMode, setActiveMode, logout, addToast, language } = useStore();
+
+  const text = language === 'id'
+    ? {
+        settings: 'Pengaturan',
+        logout: 'Keluar',
+        logoutConfirm: 'Keluar sekarang? Semua data lokal OxAI di browser ini akan dihapus.',
+        logoutTitle: 'Berhasil keluar',
+        logoutMessage: 'Data sesi lokal sudah dibersihkan.',
+        versionBy: 'By OxAI . Oxlo.ai Build 2026',
+      }
+    : {
+        settings: 'Settings',
+        logout: 'Logout',
+        logoutConfirm: 'Log out now? All local OxAI data in this browser will be deleted.',
+        logoutTitle: 'Logged out',
+        logoutMessage: 'Local session data has been cleared.',
+        versionBy: 'By OxAI . Oxlo.ai Build 2026',
+      };
 
   const handleSelectMode = (mode: (typeof menuItems)[number]['id']) => {
     setActiveMode(mode);
@@ -35,7 +53,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   };
 
   const handleLogout = () => {
-    const confirmed = window.confirm('Log out now? All local OxAI data in this browser will be deleted.');
+    const confirmed = window.confirm(text.logoutConfirm);
     if (!confirmed) return;
 
     logout();
@@ -44,8 +62,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
     addToast({
       type: 'info',
-      title: 'Logged out',
-      message: 'Local session data has been cleared.',
+      title: text.logoutTitle,
+      message: text.logoutMessage,
     });
   };
 
@@ -95,7 +113,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               >
                 <Icon className={cn('w-5 h-5', isActive && 'text-emerald-400')} />
                 <span className="md:max-w-0 md:opacity-0 md:overflow-hidden md:group-hover:max-w-[180px] md:group-hover:opacity-100 transition-all duration-200 whitespace-nowrap">
-                  {item.label}
+                  {language === 'id' ? item.labelId : item.labelEn}
                 </span>
               </button>
             );
@@ -106,7 +124,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200 md:justify-center md:px-2 md:group-hover:justify-start md:group-hover:px-3">
             <Settings className="w-5 h-5" />
             <span className="md:max-w-0 md:opacity-0 md:overflow-hidden md:group-hover:max-w-[180px] md:group-hover:opacity-100 transition-all duration-200 whitespace-nowrap">
-              Settings
+              {text.settings}
             </span>
           </button>
           <button
@@ -115,7 +133,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           >
             <LogOut className="w-5 h-5" />
             <span className="md:max-w-0 md:opacity-0 md:overflow-hidden md:group-hover:max-w-[180px] md:group-hover:opacity-100 transition-all duration-200 whitespace-nowrap">
-              Logout
+              {text.logout}
             </span>
           </button>
         </div>
@@ -123,7 +141,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="p-4 border-t border-slate-800">
           <div className="text-xs text-slate-500 md:max-h-0 md:opacity-0 md:overflow-hidden md:group-hover:max-h-20 md:group-hover:opacity-100 transition-all duration-200">
             <p>Version 1.0</p>
-            <p>By OxAI . Oxlo.ai Build 2026</p>
+            <p>{text.versionBy}</p>
           </div>
         </div>
       </aside>

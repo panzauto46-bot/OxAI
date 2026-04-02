@@ -60,6 +60,8 @@ interface OxAIState {
   setActiveMode: (mode: 'quick' | 'workflow' | 'prompt' | 'agent' | 'pipeline') => void;
   experienceMode: 'beginner' | 'advanced';
   setExperienceMode: (mode: 'beginner' | 'advanced') => void;
+  language: 'en' | 'id';
+  setLanguage: (language: 'en' | 'id') => void;
   logout: () => void;
 
   // Auth
@@ -114,6 +116,8 @@ export const useStore = create<OxAIState>()(
       setActiveMode: (mode) => set({ activeMode: mode }),
       experienceMode: 'beginner',
       setExperienceMode: (mode) => set({ experienceMode: mode }),
+      language: 'en',
+      setLanguage: (language) => set({ language }),
       logout: () => {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('oxai-storage');
@@ -123,6 +127,7 @@ export const useStore = create<OxAIState>()(
         set({
           activeMode: 'quick',
           experienceMode: 'beginner',
+          language: 'en',
           githubUser: null,
           apiKey: '',
           workflows: [],
@@ -228,6 +233,7 @@ export const useStore = create<OxAIState>()(
       partialize: (state) => ({
         activeMode: state.activeMode,
         experienceMode: state.experienceMode,
+        language: state.language,
         githubUser: state.githubUser,
         apiKey: state.apiKey,
         workflows: state.workflows,

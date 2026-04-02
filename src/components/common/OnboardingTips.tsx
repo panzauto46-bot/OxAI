@@ -1,12 +1,13 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { HelpCircle, X } from 'lucide-react';
+import { useStore } from '../../store/useStore';
 
 type Mode = 'quick' | 'workflow' | 'prompt' | 'agent' | 'pipeline';
 
 const tipsByMode: Record<Mode, { title: string; tip: string }> = {
   quick: {
     title: 'Quick Builder Tip',
-    tip: 'Isi kebutuhan dengan bahasa biasa lalu klik Generate Preview untuk hasil cepat.',
+    tip: 'Use natural language, then click Generate Preview for a fast result.',
   },
   workflow: {
     title: 'Workflow Builder Tip',
@@ -26,6 +27,29 @@ const tipsByMode: Record<Mode, { title: string; tip: string }> = {
   },
 };
 
+const tipsByModeId: Record<Mode, { title: string; tip: string }> = {
+  quick: {
+    title: 'Tips Quick Builder',
+    tip: 'Isi kebutuhan dengan bahasa biasa lalu klik Generate Preview untuk hasil cepat.',
+  },
+  workflow: {
+    title: 'Tips Workflow Builder',
+    tip: 'Gunakan Ctrl+S untuk simpan workflow dan Ctrl+Enter untuk run lebih cepat.',
+  },
+  prompt: {
+    title: 'Tips Prompt Studio',
+    tip: 'Gunakan Ctrl+Enter untuk run prompt dan Ctrl+S untuk simpan versi.',
+  },
+  agent: {
+    title: 'Tips Agent Builder',
+    tip: 'Gunakan Ctrl+Enter untuk kirim chat tanpa klik tombol send.',
+  },
+  pipeline: {
+    title: 'Tips Content Pipeline',
+    tip: 'Gunakan Ctrl+S untuk simpan pipeline dan Ctrl+Enter untuk menjalankan pipeline.',
+  },
+};
+
 const STORAGE_KEY = 'oxai-onboarding-dismissed';
 
 interface OnboardingTipsProps {
@@ -33,6 +57,7 @@ interface OnboardingTipsProps {
 }
 
 export function OnboardingTips({ mode }: OnboardingTipsProps) {
+  const language = useStore((state) => state.language);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
@@ -40,7 +65,10 @@ export function OnboardingTips({ mode }: OnboardingTipsProps) {
     setDismissed(stored === '1');
   }, []);
 
-  const content = useMemo(() => tipsByMode[mode], [mode]);
+  const content = useMemo(
+    () => (language === 'id' ? tipsByModeId[mode] : tipsByMode[mode]),
+    [language, mode]
+  );
 
   if (dismissed) return null;
 
@@ -66,4 +94,3 @@ export function OnboardingTips({ mode }: OnboardingTipsProps) {
     </div>
   );
 }
-
