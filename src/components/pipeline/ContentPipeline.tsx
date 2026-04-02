@@ -21,7 +21,8 @@ import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { Card, CardHeader, CardContent } from '../ui/Card';
 import { useStore } from '../../store/useStore';
-import { callOxloAPI, AVAILABLE_MODELS } from '../../services/oxloApi';
+import { callOxloAPI } from '../../services/oxloApi';
+import { useAvailableModels } from '../../hooks/useAvailableModels';
 
 interface PipelineStage {
   id: string;
@@ -83,17 +84,24 @@ const pipelineTemplates = [
 
 export function ContentPipeline() {
   const { apiKey, addToast } = useStore();
+  const { models: availableModels, modelOptions, defaultModelId } = useAvailableModels(apiKey);
   const [pipelineName, setPipelineName] = useState('My Pipeline');
   const [currentPipelineId, setCurrentPipelineId] = useState<string | null>(null);
   const [savedPipelines, setSavedPipelines] = useState<SavedPipeline[]>([]);
   const [input, setInput] = useState('');
   const [stages, setStages] = useState<PipelineStage[]>([]);
-  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+  const [selectedModel, setSelectedModel] = useState(defaultModelId);
   const [isRunning, setIsRunning] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [batchMode, setBatchMode] = useState(false);
   const [batchInputs, setBatchInputs] = useState<string[]>(['']);
   const [batchResults, setBatchResults] = useState<string[]>([]);
+
+  useEffect(() => {
+    const validIds = new Set(availableModels.map((model) => model.id));
+    if (availableModels.length === 0) return;
+    setSelectedModel((previous) => (validIds.has(previous) ? previous : availableModels[0].id));
+  }, [availableModels]);
 
   useEffect(() => {
     try {
@@ -552,7 +560,7 @@ export function ContentPipeline() {
                 label="AI Model"
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
-                options={AVAILABLE_MODELS.map((m) => ({ value: m.id, label: m.name }))}
+                options={modelOptions}
                 className="w-full md:w-64"
               />
             </div>

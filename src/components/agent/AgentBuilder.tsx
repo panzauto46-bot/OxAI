@@ -21,7 +21,8 @@ import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { useStore, AgentConfig, Message } from '../../store/useStore';
-import { callOxloAPI, AVAILABLE_MODELS } from '../../services/oxloApi';
+import { callOxloAPI } from '../../services/oxloApi';
+import { useAvailableModels } from '../../hooks/useAvailableModels';
 
 const agentTemplates = [
   {
@@ -169,12 +170,13 @@ export function AgentBuilder() {
     clearAgentMessages,
     addToast,
   } = useStore();
+  const { models: availableModels, modelOptions, defaultModelId } = useAvailableModels(apiKey);
 
   const [agentName, setAgentName] = useState('');
   const [persona, setPersona] = useState('');
   const [instructions, setInstructions] = useState('');
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
-  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+  const [selectedModel, setSelectedModel] = useState(defaultModelId);
   const [chatInput, setChatInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [toolTraces, setToolTraces] = useState<ToolTrace[]>([]);
@@ -199,6 +201,12 @@ export function AgentBuilder() {
   }, [persona, instructions, selectedTools]);
 
   useEffect(() => {
+    const validIds = new Set(availableModels.map((model) => model.id));
+    if (availableModels.length === 0) return;
+    setSelectedModel((previous) => (validIds.has(previous) ? previous : availableModels[0].id));
+  }, [availableModels]);
+
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [agentMessages]);
 
@@ -216,13 +224,13 @@ export function AgentBuilder() {
       setPersona(sharedAgent.persona || 'You are a helpful AI assistant.');
       setInstructions(sharedAgent.instructions || '');
       setSelectedTools(Array.isArray(sharedAgent.tools) ? sharedAgent.tools : []);
-      setSelectedModel(sharedAgent.model || 'gpt-4o-mini');
+      setSelectedModel(sharedAgent.model || defaultModelId);
       clearAgentMessages();
       setSharedImportError(null);
     } catch {
       setSharedImportError('Unable to load shared agent from link.');
     }
-  }, [clearAgentMessages, setCurrentAgent]);
+  }, [clearAgentMessages, defaultModelId, setCurrentAgent]);
 
   const handleSelectTemplate = (template: (typeof agentTemplates)[0]) => {
     setAgentName(template.name);
@@ -264,7 +272,7 @@ export function AgentBuilder() {
     setPersona(agent.persona);
     setInstructions(agent.instructions);
     setSelectedTools(agent.tools);
-    setSelectedModel(agent.model || 'gpt-4o-mini');
+    setSelectedModel(agent.model || defaultModelId);
     clearAgentMessages();
   };
 
@@ -286,7 +294,7 @@ export function AgentBuilder() {
     setPersona('');
     setInstructions('');
     setSelectedTools([]);
-    setSelectedModel('gpt-4o-mini');
+    setSelectedModel(defaultModelId);
     clearAgentMessages();
     setDeployedLink('');
     setEmbedSnippet('');
@@ -507,7 +515,7 @@ export function AgentBuilder() {
               label="AI Model"
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              options={AVAILABLE_MODELS.map((model) => ({ value: model.id, label: model.name }))}
+              options={modelOptions}
             />
 
             <Textarea

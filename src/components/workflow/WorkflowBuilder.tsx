@@ -36,7 +36,8 @@ import { OutputNode } from './nodes/OutputNode';
 import { TransformNode } from './nodes/TransformNode';
 import { ConditionNode } from './nodes/ConditionNode';
 import { useStore, Workflow } from '../../store/useStore';
-import { callOxloAPI } from '../../services/oxloApi';
+import { AVAILABLE_MODELS, DEFAULT_MODEL_ID, callOxloAPI } from '../../services/oxloApi';
+import { useAvailableModels } from '../../hooks/useAvailableModels';
 
 type NodeData = Record<string, unknown>;
 
@@ -86,31 +87,46 @@ const nodeTemplates = [
   },
 ] as const;
 
-const initialNodes: Node[] = [
-  {
-    id: '1',
-    type: 'inputNode',
-    position: { x: 50, y: 150 },
-    data: { label: 'User Input', inputType: 'text', value: '' },
-  },
-  {
-    id: '2',
-    type: 'aiModel',
-    position: { x: 400, y: 100 },
-    data: {
-      label: 'AI Model',
-      model: 'gpt-4o-mini',
-      systemPrompt: 'You are a helpful assistant.',
-      temperature: 0.7,
+function buildModelOptions(models: { id: string; name: string; provider: string }[]): {
+  value: string;
+  label: string;
+}[] {
+  return models.map((model) => ({
+    value: model.id,
+    label: `${model.name} (${model.provider})`,
+  }));
+}
+
+const fallbackModelOptions = buildModelOptions(AVAILABLE_MODELS);
+
+function createInitialNodes(defaultModel: string = DEFAULT_MODEL_ID): Node[] {
+  return [
+    {
+      id: '1',
+      type: 'inputNode',
+      position: { x: 50, y: 150 },
+      data: { label: 'User Input', inputType: 'text', value: '' },
     },
-  },
-  {
-    id: '3',
-    type: 'outputNode',
-    position: { x: 800, y: 150 },
-    data: { label: 'Output' },
-  },
-];
+    {
+      id: '2',
+      type: 'aiModel',
+      position: { x: 400, y: 100 },
+      data: {
+        label: 'AI Model',
+        model: defaultModel,
+        modelOptions: fallbackModelOptions,
+        systemPrompt: 'You are a helpful assistant.',
+        temperature: 0.7,
+      },
+    },
+    {
+      id: '3',
+      type: 'outputNode',
+      position: { x: 800, y: 150 },
+      data: { label: 'Output' },
+    },
+  ];
+}
 
 const initialEdges: Edge[] = [
   { id: 'e1-2', source: '1', target: '2', animated: true, style: { stroke: '#10b981' } },
@@ -141,6 +157,7 @@ function stripRuntimeNodeData(node: Node): Node {
   const {
     onChange,
     onConfigChange,
+    modelOptions,
     isActive,
     isLoading,
     status,
@@ -196,7 +213,7 @@ function evaluateCondition(input: string, conditionType: string, value: string):
 function WorkflowBuilderInner() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const handlersHydratedRef = useRef(false);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes.map(hydrateRuntimeNode));
+  const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes().map(hydrateRuntimeNode));
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [workflowName, setWorkflowName] = useState('My Workflow');
@@ -215,6 +232,7 @@ function WorkflowBuilderInner() {
     clearNodeResults,
     addToast,
   } = useStore();
+  const { modelOptions, defaultModelId } = useAvailableModels(apiKey);
 
   const updateNodeData = useCallback(
     (nodeId: string, updates: NodeData) => {
@@ -252,10 +270,19 @@ function WorkflowBuilderInner() {
       }
 
       if (node.type === 'aiModel') {
+        const activeModelOptions = modelOptions.length > 0 ? modelOptions : fallbackModelOptions;
+        const currentModel =
+          typeof data.model === 'string' &&
+          activeModelOptions.some((option) => option.value === data.model)
+            ? data.model
+            : activeModelOptions[0]?.value || defaultModelId;
+
         return {
           ...node,
           data: {
             ...data,
+            model: currentModel,
+            modelOptions: activeModelOptions,
             onConfigChange: (config: { model: string; systemPrompt: string; temperature: number }) => {
               setNodes((currentNodes) =>
                 currentNodes.map((candidate) =>
@@ -329,7 +356,7 @@ function WorkflowBuilderInner() {
 
       return node;
     },
-    [setNodes]
+    [defaultModelId, modelOptions, setNodes]
   );
 
   const hydrateNodesForCanvas = useCallback(
@@ -341,6 +368,12 @@ function WorkflowBuilderInner() {
     if (handlersHydratedRef.current) return;
     setNodes((currentNodes) => currentNodes.map((node) => wireNodeHandlers(node)));
     handlersHydratedRef.current = true;
+  }, [setNodes, wireNodeHandlers]);
+
+  useEffect(() => {
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => (node.type === 'aiModel' ? wireNodeHandlers(node) : node))
+    );
   }, [setNodes, wireNodeHandlers]);
 
   useEffect(() => {
@@ -400,7 +433,8 @@ function WorkflowBuilderInner() {
           label: template?.label || 'Node',
           ...(type === 'inputNode' && { inputType: 'text', value: '' }),
           ...(type === 'aiModel' && {
-            model: 'gpt-4o-mini',
+            model: modelOptions[0]?.value || defaultModelId,
+            modelOptions: modelOptions.length > 0 ? modelOptions : fallbackModelOptions,
             systemPrompt: 'You are a helpful assistant.',
             temperature: 0.7,
           }),
@@ -412,7 +446,7 @@ function WorkflowBuilderInner() {
 
       setNodes((currentNodes) => [...currentNodes, wireNodeHandlers(newNode)]);
     },
-    [reactFlowInstance, setNodes, wireNodeHandlers]
+    [defaultModelId, modelOptions, reactFlowInstance, setNodes, wireNodeHandlers]
   );
 
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
@@ -622,7 +656,7 @@ function WorkflowBuilderInner() {
             updateNodeData(node.id, { isLoading: true, status: 'loading' });
             const response = await callOxloAPI(
               apiKey,
-              String(nodeData.model ?? 'gpt-4o-mini'),
+              String(nodeData.model ?? defaultModelId),
               [
                 {
                   role: 'system',
@@ -678,7 +712,7 @@ function WorkflowBuilderInner() {
               isActive: false,
               isLoading: false,
               status: 'success',
-              result: passed ? 'âœ“ True' : 'âœ— False',
+              result: passed ? 'True' : 'False',
               error: undefined,
             });
             setNodeResult(node.id, { output, branch, status: 'success' });

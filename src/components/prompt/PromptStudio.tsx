@@ -21,11 +21,11 @@ import { PromptVersion, useStore } from '../../store/useStore';
 import {
   callOxloAPI,
   compareModels,
-  AVAILABLE_MODELS,
   extractVariables,
   replaceVariables,
   ModelResponse,
 } from '../../services/oxloApi';
+import { useAvailableModels } from '../../hooks/useAvailableModels';
 
 interface DiffRow {
   line: number;
@@ -53,6 +53,11 @@ function buildDiffRows(basePrompt: string, comparePrompt: string): DiffRow[] {
 
 export function PromptStudio() {
   const { apiKey, promptVersions, addPromptVersion, updatePromptVersion, deletePromptVersion, addToast } = useStore();
+  const { models: availableModels, modelOptions, defaultModelId } = useAvailableModels(apiKey);
+  const modelLabelById = useMemo(
+    () => new Map(availableModels.map((model) => [model.id, model.name])),
+    [availableModels]
+  );
 
   const [prompt, setPrompt] = useState('Write a {{tone}} blog post about {{topic}} in {{language}}.');
   const [variables, setVariables] = useState<Record<string, string>>({
@@ -60,11 +65,8 @@ export function PromptStudio() {
     topic: 'AI technology',
     language: 'English',
   });
-  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
-  const [compareModelsSelected, setCompareModelsSelected] = useState<string[]>([
-    'gpt-4o-mini',
-    'claude-3-5-haiku-20241022',
-  ]);
+  const [selectedModel, setSelectedModel] = useState(defaultModelId);
+  const [compareModelsSelected, setCompareModelsSelected] = useState<string[]>([]);
   const [temperature, setTemperature] = useState(0.7);
   const [isLoading, setIsLoading] = useState(false);
   const [isComparing, setIsComparing] = useState(false);
@@ -153,6 +155,24 @@ export function PromptStudio() {
       .sort((a, b) => a.key.localeCompare(b.key));
   }, [diffBaseVersion, diffCompareVersion]);
 
+  useEffect(() => {
+    const validIds = new Set(availableModels.map((model) => model.id));
+    if (availableModels.length === 0) return;
+
+    setSelectedModel((previous) => (validIds.has(previous) ? previous : availableModels[0].id));
+
+    setCompareModelsSelected((previous) => {
+      const normalized = previous.filter((modelId) => validIds.has(modelId)).slice(0, 3);
+      if (normalized.length >= 2) return normalized;
+
+      const seeds = availableModels.slice(0, 3).map((model) => model.id);
+      if (seeds.length >= 2) {
+        return [...new Set([...normalized, ...seeds])].slice(0, 3);
+      }
+      return seeds;
+    });
+  }, [availableModels]);
+
   const handleRunSingle = async () => {
     if (!apiKey) {
       addToast({
@@ -231,13 +251,22 @@ export function PromptStudio() {
       });
       return;
     }
+    if (availableModels.length === 0) {
+      addToast({
+        type: 'error',
+        title: 'No chat models found',
+        message: 'Could not find available chat models from Oxlo.ai.',
+      });
+      return;
+    }
 
     setIsModelCheckLoading(true);
     setModelCheckResults([]);
 
     const testPrompt = [{ role: 'user' as const, content: 'Reply with exactly: OK' }];
+    const modelCheckCandidates = availableModels.slice(0, 12);
     const results = await Promise.all(
-      AVAILABLE_MODELS.map((model) =>
+      modelCheckCandidates.map((model) =>
         callOxloAPI(apiKey, model.id, testPrompt, 0, 32, 20000)
       )
     );
@@ -349,7 +378,7 @@ export function PromptStudio() {
                   label="Model"
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
-                  options={AVAILABLE_MODELS.map((m) => ({ value: m.id, label: m.name }))}
+                  options={modelOptions}
                   className="w-48"
                 />
                 <div className="w-32">
@@ -380,7 +409,7 @@ export function PromptStudio() {
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-semibold text-white">Single Model Result</h3>
                   <span className="text-sm text-emerald-400">
-                    {AVAILABLE_MODELS.find((m) => m.id === singleResult.model)?.name}
+                    {modelLabelById.get(singleResult.model) || singleResult.model}
                   </span>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-slate-400">
@@ -412,7 +441,7 @@ export function PromptStudio() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                {AVAILABLE_MODELS.map((model) => (
+                {availableModels.map((model) => (
                   <button
                     key={model.id}
                     onClick={() => handleToggleCompareModel(model.id)}
@@ -441,7 +470,7 @@ export function PromptStudio() {
                     >
                       <div className="flex items-center justify-between mb-3">
                         <span className="font-semibold text-white">
-                          {AVAILABLE_MODELS.find((m) => m.id === result.model)?.name}
+                          {modelLabelById.get(result.model) || result.model}
                         </span>
                         <div className="flex items-center gap-3 text-sm text-slate-400">
                           <span className="flex items-center gap-1">
@@ -500,7 +529,7 @@ export function PromptStudio() {
                       }`}
                     >
                       <span className="text-sm text-white">
-                        {AVAILABLE_MODELS.find((m) => m.id === result.model)?.name}
+                        {modelLabelById.get(result.model) || result.model}
                       </span>
                       <span className={`text-xs ${isOk ? 'text-emerald-400' : 'text-red-400'}`}>
                         {isOk ? `OK (${result.latency}ms)` : result.error}

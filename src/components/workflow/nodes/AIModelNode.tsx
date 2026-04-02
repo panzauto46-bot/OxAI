@@ -3,13 +3,14 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { Brain, Loader2, AlertCircle } from 'lucide-react';
 import { Select } from '../../ui/Select';
 import { Textarea } from '../../ui/Textarea';
-import { AVAILABLE_MODELS } from '../../../services/oxloApi';
+import { AVAILABLE_MODELS, DEFAULT_MODEL_ID } from '../../../services/oxloApi';
 
 interface AIModelNodeData {
   label: string;
   model: string;
   systemPrompt: string;
   temperature: number;
+  modelOptions?: { value: string; label: string }[];
   status?: 'idle' | 'loading' | 'success' | 'error' | 'skipped';
   isLoading?: boolean;
   isActive?: boolean;
@@ -19,7 +20,9 @@ interface AIModelNodeData {
 }
 
 export const AIModelNode = memo(({ data, selected }: NodeProps<AIModelNodeData>) => {
-  const model = data.model || 'gpt-4o-mini';
+  const fallbackOptions = AVAILABLE_MODELS.map((m) => ({ value: m.id, label: `${m.name} (${m.provider})` }));
+  const selectOptions = data.modelOptions && data.modelOptions.length > 0 ? data.modelOptions : fallbackOptions;
+  const model = data.model || selectOptions[0]?.value || DEFAULT_MODEL_ID;
   const systemPrompt = data.systemPrompt || 'You are a helpful assistant.';
   const temperature = data.temperature ?? 0.7;
 
@@ -57,7 +60,7 @@ export const AIModelNode = memo(({ data, selected }: NodeProps<AIModelNodeData>)
           label="Model"
           value={model}
           onChange={(e) => handleConfigChange({ model: e.target.value })}
-          options={AVAILABLE_MODELS.map((m) => ({ value: m.id, label: `${m.name} (${m.provider})` }))}
+          options={selectOptions}
           className="text-sm nodrag"
         />
         <Textarea
