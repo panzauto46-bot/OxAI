@@ -775,7 +775,7 @@ export function AgentBuilder() {
   const [previewSrcDoc, setPreviewSrcDoc] = useState('');
   const [previewCode, setPreviewCode] = useState('');
   const [previewStatus, setPreviewStatus] = useState(
-    'Enable Design Mode and ask your agent to generate UI/UX code to see live preview.'
+    'Send a build prompt to generate live code and preview.'
   );
   const [previewCodeCopied, setPreviewCodeCopied] = useState(false);
   const [deployedLink, setDeployedLink] = useState('');
@@ -1061,7 +1061,7 @@ export function AgentBuilder() {
     setPreviewDevice('desktop');
     setPreviewSrcDoc('');
     setPreviewCode('');
-    setPreviewStatus('Enable Design Mode and ask your agent to generate UI/UX code to see live preview.');
+    setPreviewStatus('Send a build prompt to generate live code and preview.');
     clearAgentMessages();
     setDeployedLink('');
     setEmbedSnippet('');
@@ -1767,7 +1767,7 @@ export function AgentBuilder() {
                 </div>
               ) : (
                 <div className="h-full min-h-[260px] rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-400">
-                  Turn on Design Mode and ask agent to generate a UI layout. Preview will appear here automatically.
+                  Send a build prompt (for example: "buat landing page fintech premium"). Live preview will appear automatically.
                 </div>
               )}
             </div>
