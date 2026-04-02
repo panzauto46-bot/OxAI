@@ -1,5 +1,5 @@
 // Oxlo.ai API Service
-const OXLO_API_URL = 'https://api.oxlo.ai/v1/chat/completions';
+const OXLO_PROXY_URL = '/api/oxlo/chat';
 const DEFAULT_TIMEOUT_MS = 45000;
 
 export interface ChatMessage {
@@ -115,17 +115,17 @@ export async function callOxloAPI(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   
   try {
-    const response = await fetch(OXLO_API_URL, {
+    const response = await fetch(OXLO_PROXY_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
+        apiKey,
         model,
         messages,
         temperature,
-        max_tokens: maxTokens,
+        maxTokens,
       }),
       signal: controller.signal,
     });
