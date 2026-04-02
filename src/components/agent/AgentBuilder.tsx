@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useMemo } from 'react';
+﻿import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   Bot,
   Send,
@@ -17,6 +17,7 @@ import {
   Copy,
   Monitor,
   Smartphone,
+  WandSparkles,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -233,6 +234,101 @@ ${htmlSource || '<main style="padding:24px"><p>No HTML code found.</p></main>'}
   };
 }
 
+type DesignTarget = 'web' | 'mobile' | 'responsive';
+
+interface AgentBlueprint {
+  name: string;
+  persona: string;
+  instructions: string;
+  tools: string[];
+  designMode: boolean;
+  designTarget: DesignTarget;
+  templateId: string;
+  templateName: string;
+}
+
+const templateKeywordMap: Record<string, string[]> = {
+  'customer-support': ['support', 'customer', 'ticket', 'refund', 'help', 'cs', 'layanan'],
+  'research-assistant': ['research', 'market', 'analyst', 'analysis', 'compare', 'riset'],
+  'code-reviewer': ['code', 'coding', 'debug', 'developer', 'program', 'script', 'bug'],
+  'content-writer': ['content', 'copywriting', 'caption', 'article', 'blog', 'marketing', 'konten'],
+};
+
+function unique<T>(list: T[]): T[] {
+  return [...new Set(list)];
+}
+
+function toTitleWords(text: string): string {
+  return text
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function buildAgentName(goal: string, fallback: string): string {
+  const cleaned = goal.replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
+  const head = cleaned.split(/\s+/).filter(Boolean).slice(0, 3).join(' ');
+  return head ? `${toTitleWords(head)} Agent` : fallback;
+}
+
+function inferDesignMode(goal: string): { designMode: boolean; designTarget: DesignTarget } {
+  const lower = goal.toLowerCase();
+  const isDesign = /(ui|ux|web|website|landing|mobile|app|design|figma)/.test(lower);
+  if (!isDesign) {
+    return { designMode: false, designTarget: 'responsive' };
+  }
+
+  if (/(mobile|android|ios)/.test(lower) && !/(web|website|desktop)/.test(lower)) {
+    return { designMode: true, designTarget: 'mobile' };
+  }
+
+  if (/(web|website|desktop|landing page)/.test(lower) && !/(mobile|android|ios)/.test(lower)) {
+    return { designMode: true, designTarget: 'web' };
+  }
+
+  return { designMode: true, designTarget: 'responsive' };
+}
+
+function inferAgentBlueprint(goal: string): AgentBlueprint {
+  const lower = goal.toLowerCase();
+
+  const scoredTemplates = agentTemplates.map((template) => {
+    const keywords = templateKeywordMap[template.id] || [];
+    const score = keywords.reduce((sum, keyword) => sum + (lower.includes(keyword) ? 1 : 0), 0);
+    return { template, score };
+  });
+  scoredTemplates.sort((a, b) => b.score - a.score);
+  const selectedTemplate = scoredTemplates[0]?.template || agentTemplates[0];
+
+  const extraTools: string[] = [];
+  if (/(hitung|calculate|math|formula)/.test(lower)) extraTools.push('calculator');
+  if (/(faq|refund|pricing|subscription|support)/.test(lower)) extraTools.push('faq');
+  if (/(ringkas|summarize|summary)/.test(lower)) extraTools.push('summarizer');
+  if (/(search|research|riset|trend|market)/.test(lower)) extraTools.push('web-search');
+  if (/(code|debug|bug|programming)/.test(lower)) extraTools.push('code-analyzer');
+  if (/(tone|style|rewrite|rephrase)/.test(lower)) extraTools.push('tone-adjuster');
+
+  const { designMode, designTarget } = inferDesignMode(goal);
+  const finalTools = unique([...selectedTemplate.tools, ...extraTools]);
+
+  const missionLine = `Primary mission: ${goal}`;
+  const designLine = designMode
+    ? `Design mode requirement: generate ${designTarget} UI/UX output with implementation-ready code.`
+    : 'Design mode requirement: off unless explicitly requested by the user.';
+
+  return {
+    name: buildAgentName(goal, `${selectedTemplate.name} Agent`),
+    persona: selectedTemplate.persona,
+    instructions: [selectedTemplate.instructions, missionLine, designLine].join('\n\n'),
+    tools: finalTools,
+    designMode,
+    designTarget,
+    templateId: selectedTemplate.id,
+    templateName: selectedTemplate.name,
+  };
+}
+
 export function AgentBuilder() {
   const {
     apiKey,
@@ -248,7 +344,14 @@ export function AgentBuilder() {
   } = useStore();
   const { models: availableModels, modelOptions, defaultModelId } = useAvailableModels(apiKey);
 
+  const lastAutoGoalRef = useRef('');
   const [agentName, setAgentName] = useState('');
+  const [agentGoalPrompt, setAgentGoalPrompt] = useState('');
+  const [autoAgentStatus, setAutoAgentStatus] = useState(
+    'Describe your goal and Agent Builder will auto-configure everything.'
+  );
+  const [lastTemplateName, setLastTemplateName] = useState('Not selected');
+  const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
   const [persona, setPersona] = useState('');
   const [instructions, setInstructions] = useState('');
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
@@ -295,11 +398,48 @@ export function AgentBuilder() {
     ].join('\n\n');
   }, [persona, instructions, selectedTools, designMode, designTarget]);
 
+  const applyGoalPrompt = useCallback((goalPrompt: string, source: 'auto' | 'manual') => {
+    const trimmedGoal = goalPrompt.trim();
+    if (!trimmedGoal) return;
+
+    const blueprint = inferAgentBlueprint(trimmedGoal);
+    setAgentName(blueprint.name);
+    setPersona(blueprint.persona);
+    setInstructions(blueprint.instructions);
+    setSelectedTools(blueprint.tools);
+    setDesignMode(blueprint.designMode);
+    setDesignTarget(blueprint.designTarget);
+    setLastTemplateName(blueprint.templateName);
+    lastAutoGoalRef.current = trimmedGoal;
+    setAutoAgentStatus(
+      source === 'auto'
+        ? `Auto-configured with ${blueprint.templateName} template.`
+        : `Applied ${blueprint.templateName} template from your goal prompt.`
+    );
+  }, []);
+
   useEffect(() => {
     const validIds = new Set(availableModels.map((model) => model.id));
     if (availableModels.length === 0) return;
     setSelectedModel((previous) => (validIds.has(previous) ? previous : availableModels[0].id));
   }, [availableModels]);
+
+  useEffect(() => {
+    const trimmedGoal = agentGoalPrompt.trim();
+    if (trimmedGoal.length < 8) {
+      if (!trimmedGoal) {
+        setAutoAgentStatus('Describe your goal and Agent Builder will auto-configure everything.');
+      }
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      if (trimmedGoal === lastAutoGoalRef.current) return;
+      applyGoalPrompt(trimmedGoal, 'auto');
+    }, 900);
+
+    return () => window.clearTimeout(timer);
+  }, [agentGoalPrompt, applyGoalPrompt]);
 
   useEffect(() => {
     if (!designMode) {
@@ -333,6 +473,8 @@ export function AgentBuilder() {
       setSelectedModel(sharedAgent.model || defaultModelId);
       clearAgentMessages();
       setSharedImportError(null);
+      setLastTemplateName('Shared');
+      setAutoAgentStatus('Loaded shared agent config from link.');
     } catch {
       setSharedImportError('Unable to load shared agent from link.');
     }
@@ -343,6 +485,8 @@ export function AgentBuilder() {
     setPersona(template.persona);
     setInstructions(template.instructions);
     setSelectedTools(template.tools);
+    setLastTemplateName(template.name);
+    setAutoAgentStatus(`${template.name} template applied.`);
   };
 
   const handleToggleTool = (toolId: string) => {
@@ -380,6 +524,8 @@ export function AgentBuilder() {
     setSelectedTools(agent.tools);
     setSelectedModel(agent.model || defaultModelId);
     clearAgentMessages();
+    setLastTemplateName('Custom');
+    setAutoAgentStatus('Loaded saved agent. Edit goal prompt anytime to auto-reconfigure.');
   };
 
   const handleDeleteAgent = (id: string) => {
@@ -397,6 +543,10 @@ export function AgentBuilder() {
   const handleNewAgent = () => {
     setCurrentAgent(null);
     setAgentName('');
+    setAgentGoalPrompt('');
+    setAutoAgentStatus('Describe your goal and Agent Builder will auto-configure everything.');
+    setLastTemplateName('Not selected');
+    setShowAdvancedConfig(false);
     setPersona('');
     setInstructions('');
     setSelectedTools([]);
@@ -411,6 +561,7 @@ export function AgentBuilder() {
     setDeployedLink('');
     setEmbedSnippet('');
     setToolTraces([]);
+    lastAutoGoalRef.current = '';
   };
 
   const handleSendMessage = async () => {
@@ -568,22 +719,24 @@ export function AgentBuilder() {
         </div>
 
         <div className="mb-4">
-          <p className="text-xs text-slate-500 mb-2">Templates</p>
-          <div className="space-y-1">
-            {agentTemplates.map((template) => {
-              const Icon = template.icon;
-              return (
-                <button
-                  key={template.id}
-                  onClick={() => handleSelectTemplate(template)}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all"
-                >
-                  <Icon className="w-4 h-4" />
-                  {template.name}
-                </button>
-              );
-            })}
-          </div>
+          <details className="rounded-lg border border-slate-700 bg-slate-900/40 p-2">
+            <summary className="cursor-pointer text-xs text-slate-400 font-medium">Templates (Optional)</summary>
+            <div className="space-y-1 mt-2">
+              {agentTemplates.map((template) => {
+                const Icon = template.icon;
+                return (
+                  <button
+                    key={template.id}
+                    onClick={() => handleSelectTemplate(template)}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all"
+                  >
+                    <Icon className="w-4 h-4" />
+                    {template.name}
+                  </button>
+                );
+              })}
+            </div>
+          </details>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -640,6 +793,41 @@ export function AgentBuilder() {
           )}
 
           <div className="space-y-4">
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-900/20 p-3">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-200 flex items-center gap-2">
+                      <WandSparkles className="w-4 h-4" />
+                      Prompt-to-Agent Auto Setup
+                    </p>
+                    <p className="text-xs text-emerald-300/80 mt-1">
+                      Type what you want. Agent config is built automatically.
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => applyGoalPrompt(agentGoalPrompt, 'manual')}
+                    disabled={agentGoalPrompt.trim().length < 3}
+                  >
+                    <WandSparkles className="w-4 h-4" />
+                    Apply Now
+                  </Button>
+                </div>
+                <Textarea
+                  value={agentGoalPrompt}
+                  onChange={(e) => setAgentGoalPrompt(e.target.value)}
+                  rows={3}
+                  placeholder="Example: Build a responsive UI/UX agent that designs ecommerce landing pages and writes conversion-focused copy."
+                />
+                <div className="rounded-lg border border-slate-700/70 bg-slate-900/40 px-3 py-2">
+                  <p className="text-xs text-slate-300">{autoAgentStatus}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Template: {lastTemplateName}</p>
+                </div>
+              </div>
+            </div>
+
             <Input
               label="Agent Name"
               value={agentName}
@@ -658,7 +846,7 @@ export function AgentBuilder() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-white">UI/UX Design Mode</p>
-                  <p className="text-xs text-slate-400">Generate web/mobile UI code and render live preview.</p>
+                  <p className="text-xs text-slate-400">Auto-on when your goal asks for web/mobile design.</p>
                 </div>
                 <Button
                   size="sm"
@@ -685,53 +873,66 @@ export function AgentBuilder() {
               )}
             </div>
 
-            <Textarea
-              label="Persona"
-              value={persona}
-              onChange={(e) => setPersona(e.target.value)}
-              placeholder="Define your agent's personality..."
-              rows={3}
-            />
+            <Button
+              variant="secondary"
+              onClick={() => setShowAdvancedConfig((previous) => !previous)}
+              className="w-full"
+            >
+              <Settings className="w-4 h-4" />
+              {showAdvancedConfig ? 'Hide Advanced Config' : 'Show Advanced Config'}
+            </Button>
 
-            <Textarea
-              label="Instructions"
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              placeholder="Specific instructions for the agent..."
-              rows={4}
-            />
+            {showAdvancedConfig && (
+              <div className="space-y-4 rounded-xl border border-slate-700 bg-slate-900/30 p-3">
+                <Textarea
+                  label="Persona"
+                  value={persona}
+                  onChange={(e) => setPersona(e.target.value)}
+                  placeholder="Define your agent's personality..."
+                  rows={3}
+                />
 
-            <Textarea
-              label="Generated System Prompt (Auto)"
-              value={generatedSystemPrompt}
-              rows={5}
-              readOnly
-              className="text-xs"
-            />
+                <Textarea
+                  label="Instructions"
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  placeholder="Specific instructions for the agent..."
+                  rows={4}
+                />
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Tools</label>
-              <div className="grid grid-cols-2 gap-2">
-                {availableTools.map((tool) => {
-                  const Icon = tool.icon;
-                  const isSelected = selectedTools.includes(tool.id);
-                  return (
-                    <button
-                      key={tool.id}
-                      onClick={() => handleToggleTool(tool.id)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
-                        isSelected
-                          ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30'
-                          : 'bg-slate-800/50 text-slate-400 border border-slate-700 hover:border-slate-600'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {tool.name}
-                    </button>
-                  );
-                })}
+                <Textarea
+                  label="Generated System Prompt (Auto)"
+                  value={generatedSystemPrompt}
+                  rows={5}
+                  readOnly
+                  className="text-xs"
+                />
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Tools</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {availableTools.map((tool) => {
+                      const Icon = tool.icon;
+                      const isSelected = selectedTools.includes(tool.id);
+                      return (
+                        <button
+                          key={tool.id}
+                          onClick={() => handleToggleTool(tool.id)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
+                            isSelected
+                              ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30'
+                              : 'bg-slate-800/50 text-slate-400 border border-slate-700 hover:border-slate-600'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          {tool.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="flex gap-2 pt-2">
               <Button onClick={handleSaveAgent} className="flex-1">
@@ -899,4 +1100,5 @@ export function AgentBuilder() {
     </div>
   );
 }
+
 

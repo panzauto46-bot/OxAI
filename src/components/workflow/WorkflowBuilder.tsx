@@ -27,9 +27,11 @@ import {
   Link2,
   FolderOpen,
   Check,
+  WandSparkles,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { Textarea } from '../ui/Textarea';
 import { InputNode } from './nodes/InputNode';
 import { AIModelNode } from './nodes/AIModelNode';
 import { OutputNode } from './nodes/OutputNode';
@@ -210,13 +212,285 @@ function evaluateCondition(input: string, conditionType: string, value: string):
   }
 }
 
+type TransformType = 'regex' | 'json' | 'uppercase' | 'lowercase' | 'trim' | 'split';
+type ConditionType = 'contains' | 'equals' | 'startsWith' | 'endsWith' | 'regex';
+
+interface AutoWorkflowPlan {
+  name: string;
+  systemPrompt: string;
+  transform?: {
+    type: TransformType;
+    pattern: string;
+  };
+  condition?: {
+    type: ConditionType;
+    value: string;
+  };
+}
+
+function titleCase(text: string): string {
+  return text
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function buildWorkflowNameFromPrompt(prompt: string): string {
+  const compact = prompt.replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
+  const tokens = compact.split(/\s+/).filter(Boolean).slice(0, 4);
+  if (tokens.length === 0) return 'Prompt Workflow';
+  return `${titleCase(tokens.join(' '))} Flow`;
+}
+
+function inferSystemPromptFromGoal(goal: string): string {
+  const lower = goal.toLowerCase();
+
+  if (/(ui|ux|web|website|landing|mobile|app|design)/.test(lower)) {
+    return [
+      'You are a senior UI/UX designer and frontend engineer.',
+      'Return practical implementation with clear structure.',
+      'If asked for code, include clean HTML/CSS/JS in fenced code blocks.',
+      `Primary goal: ${goal}`,
+    ].join('\n');
+  }
+
+  if (/(ringkas|summary|summarize|resume)/.test(lower)) {
+    return [
+      'You are an expert summarizer.',
+      'Keep answers concise, structured, and easy to scan.',
+      `Primary goal: ${goal}`,
+    ].join('\n');
+  }
+
+  if (/(translate|terjemah|terjemahkan)/.test(lower)) {
+    return [
+      'You are a professional translator.',
+      'Preserve tone and context while translating accurately.',
+      `Primary goal: ${goal}`,
+    ].join('\n');
+  }
+
+  return [
+    'You are a helpful assistant.',
+    'Solve the user request directly and provide practical output.',
+    `Primary goal: ${goal}`,
+  ].join('\n');
+}
+
+function inferTransformFromPrompt(prompt: string): AutoWorkflowPlan['transform'] {
+  const lower = prompt.toLowerCase();
+
+  if (/(uppercase|huruf besar|kapital)/.test(lower)) {
+    return { type: 'uppercase', pattern: '' };
+  }
+  if (/(lowercase|huruf kecil)/.test(lower)) {
+    return { type: 'lowercase', pattern: '' };
+  }
+  if (/(trim|hapus spasi|rapikan spasi)/.test(lower)) {
+    return { type: 'trim', pattern: '' };
+  }
+  if (/(json|format json|parse json)/.test(lower)) {
+    return { type: 'json', pattern: '' };
+  }
+  if (/(regex|regular expression)/.test(lower)) {
+    const patternMatch = prompt.match(/regex\s*[:=]\s*([^\n]+)/i);
+    return { type: 'regex', pattern: patternMatch?.[1]?.trim() || '\\w+' };
+  }
+  if (/(split|pisah)/.test(lower)) {
+    const splitMatch = prompt.match(/(?:split|pisah)(?:\s+by|\s+dengan)?\s+([^\s.,;]+)/i);
+    return { type: 'split', pattern: splitMatch?.[1]?.trim() || ',' };
+  }
+
+  return undefined;
+}
+
+function inferConditionFromPrompt(prompt: string): AutoWorkflowPlan['condition'] {
+  const lower = prompt.toLowerCase();
+
+  const containsMatch = prompt.match(
+    /(?:if|jika).*(?:contains|mengandung)\s+["']?([^"'\n.,;!?]+)/i
+  );
+  if (containsMatch?.[1]) {
+    return { type: 'contains', value: containsMatch[1].trim() };
+  }
+
+  const startsWithMatch = prompt.match(
+    /(?:if|jika).*(?:starts with|diawali)\s+["']?([^"'\n.,;!?]+)/i
+  );
+  if (startsWithMatch?.[1]) {
+    return { type: 'startsWith', value: startsWithMatch[1].trim() };
+  }
+
+  const endsWithMatch = prompt.match(/(?:if|jika).*(?:ends with|diakhiri)\s+["']?([^"'\n.,;!?]+)/i);
+  if (endsWithMatch?.[1]) {
+    return { type: 'endsWith', value: endsWithMatch[1].trim() };
+  }
+
+  const equalsMatch = prompt.match(/(?:if|jika).*(?:equals|sama dengan)\s+["']?([^"'\n.,;!?]+)/i);
+  if (equalsMatch?.[1]) {
+    return { type: 'equals', value: equalsMatch[1].trim() };
+  }
+
+  const regexMatch = prompt.match(/(?:if|jika).*(?:matches regex|regex)\s+["']?([^"'\n]+)["']?/i);
+  if (regexMatch?.[1]) {
+    return { type: 'regex', value: regexMatch[1].trim() };
+  }
+
+  if (/(only if|hanya jika|jika)/.test(lower) && /(contains|mengandung)/.test(lower)) {
+    return { type: 'contains', value: 'important' };
+  }
+
+  return undefined;
+}
+
+function inferWorkflowPlan(prompt: string): AutoWorkflowPlan {
+  return {
+    name: buildWorkflowNameFromPrompt(prompt),
+    systemPrompt: inferSystemPromptFromGoal(prompt),
+    transform: inferTransformFromPrompt(prompt),
+    condition: inferConditionFromPrompt(prompt),
+  };
+}
+
+function buildNodesAndEdgesFromPrompt(
+  prompt: string,
+  plan: AutoWorkflowPlan,
+  defaultModel: string,
+  options: { value: string; label: string }[]
+): { nodes: Node[]; edges: Edge[] } {
+  const activeModelOptions = options.length > 0 ? options : fallbackModelOptions;
+  const model = activeModelOptions[0]?.value || defaultModel;
+
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
+  let index = 1;
+  const nextId = () => `${index++}`;
+
+  const inputId = nextId();
+  nodes.push({
+    id: inputId,
+    type: 'inputNode',
+    position: { x: 50, y: 170 },
+    data: { label: 'User Prompt', inputType: 'prompt', value: prompt },
+  });
+
+  let conditionId: string | null = null;
+  let currentSource = inputId;
+  let nextX = 360;
+
+  if (plan.condition) {
+    conditionId = nextId();
+    nodes.push({
+      id: conditionId,
+      type: 'conditionNode',
+      position: { x: nextX, y: 150 },
+      data: {
+        label: 'Auto Condition',
+        conditionType: plan.condition.type,
+        value: plan.condition.value,
+      },
+    });
+    edges.push({
+      id: `e${currentSource}-${conditionId}`,
+      source: currentSource,
+      target: conditionId,
+      animated: true,
+      style: { stroke: '#10b981' },
+    });
+    currentSource = conditionId;
+    nextX += 310;
+  }
+
+  const aiId = nextId();
+  nodes.push({
+    id: aiId,
+    type: 'aiModel',
+    position: { x: nextX, y: 120 },
+    data: {
+      label: 'AI Generator',
+      model,
+      modelOptions: activeModelOptions,
+      systemPrompt: plan.systemPrompt,
+      temperature: 0.7,
+    },
+  });
+  edges.push({
+    id: `e${currentSource}-${aiId}`,
+    source: currentSource,
+    target: aiId,
+    ...(conditionId ? { sourceHandle: 'true' } : {}),
+    animated: true,
+    style: { stroke: '#10b981' },
+  });
+
+  currentSource = aiId;
+  nextX += 300;
+
+  if (plan.transform) {
+    const transformId = nextId();
+    nodes.push({
+      id: transformId,
+      type: 'transformNode',
+      position: { x: nextX, y: 150 },
+      data: {
+        label: 'Auto Transform',
+        transformType: plan.transform.type,
+        pattern: plan.transform.pattern,
+      },
+    });
+    edges.push({
+      id: `e${currentSource}-${transformId}`,
+      source: currentSource,
+      target: transformId,
+      animated: true,
+      style: { stroke: '#14b8a6' },
+    });
+    currentSource = transformId;
+    nextX += 270;
+  }
+
+  const outputId = nextId();
+  nodes.push({
+    id: outputId,
+    type: 'outputNode',
+    position: { x: nextX, y: 170 },
+    data: { label: 'Result Output' },
+  });
+  edges.push({
+    id: `e${currentSource}-${outputId}`,
+    source: currentSource,
+    target: outputId,
+    animated: true,
+    style: { stroke: '#84cc16' },
+  });
+
+  if (conditionId) {
+    edges.push({
+      id: `e${conditionId}-${outputId}-false`,
+      source: conditionId,
+      sourceHandle: 'false',
+      target: outputId,
+      animated: true,
+      style: { stroke: '#ef4444' },
+    });
+  }
+
+  return { nodes, edges };
+}
+
 function WorkflowBuilderInner() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const handlersHydratedRef = useRef(false);
+  const lastAutoBuiltPromptRef = useRef('');
   const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes().map(hydrateRuntimeNode));
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [workflowName, setWorkflowName] = useState('My Workflow');
+  const [workflowPrompt, setWorkflowPrompt] = useState('');
+  const [autoBuildStatus, setAutoBuildStatus] = useState(
+    'Type your goal and workflow will auto-build in under 1 second.'
+  );
   const [isRunning, setIsRunning] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -364,6 +638,43 @@ function WorkflowBuilderInner() {
     [wireNodeHandlers]
   );
 
+  const buildWorkflowFromPrompt = useCallback(
+    (promptInput: string, source: 'auto' | 'manual') => {
+      const trimmed = promptInput.trim();
+      if (!trimmed) return;
+
+      const plan = inferWorkflowPlan(trimmed);
+      const { nodes: generatedNodes, edges: generatedEdges } = buildNodesAndEdgesFromPrompt(
+        trimmed,
+        plan,
+        defaultModelId,
+        modelOptions
+      );
+
+      setNodes(hydrateNodesForCanvas(generatedNodes));
+      setEdges(generatedEdges);
+      setWorkflowName(plan.name);
+      setCurrentWorkflow(null);
+      clearNodeResults();
+      setImportError(null);
+      lastAutoBuiltPromptRef.current = trimmed;
+      setAutoBuildStatus(
+        source === 'auto'
+          ? 'Auto-built from your latest prompt.'
+          : 'Workflow generated from your prompt.'
+      );
+    },
+    [
+      clearNodeResults,
+      defaultModelId,
+      hydrateNodesForCanvas,
+      modelOptions,
+      setCurrentWorkflow,
+      setEdges,
+      setNodes,
+    ]
+  );
+
   useEffect(() => {
     if (handlersHydratedRef.current) return;
     setNodes((currentNodes) => currentNodes.map((node) => wireNodeHandlers(node)));
@@ -395,10 +706,28 @@ function WorkflowBuilderInner() {
       setCurrentWorkflow(null);
       clearNodeResults();
       setImportError(null);
+      setAutoBuildStatus('Imported workflow from link. You can edit or run it now.');
     } catch {
       setImportError('Failed to import workflow from link. The link may be invalid.');
     }
   }, [clearNodeResults, hydrateNodesForCanvas, setCurrentWorkflow, setEdges, setNodes]);
+
+  useEffect(() => {
+    const trimmed = workflowPrompt.trim();
+    if (trimmed.length < 8) {
+      if (!trimmed) {
+        setAutoBuildStatus('Type your goal and workflow will auto-build in under 1 second.');
+      }
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      if (trimmed === lastAutoBuiltPromptRef.current) return;
+      buildWorkflowFromPrompt(trimmed, 'auto');
+    }, 900);
+
+    return () => window.clearTimeout(timer);
+  }, [buildWorkflowFromPrompt, workflowPrompt]);
 
   const onConnect = useCallback(
     (params: Connection) =>
@@ -485,6 +814,7 @@ function WorkflowBuilderInner() {
     setCurrentWorkflow(workflow);
     clearNodeResults();
     setImportError(null);
+    setAutoBuildStatus('Loaded saved workflow. You can still type a new prompt to auto-rebuild.');
   };
 
   const handleDeleteWorkflow = (id: string) => {
@@ -771,6 +1101,8 @@ function WorkflowBuilderInner() {
     clearNodeResults();
     setCurrentWorkflow(null);
     setWorkflowName('My Workflow');
+    lastAutoBuiltPromptRef.current = '';
+    setAutoBuildStatus('Canvas cleared. Type a new goal prompt to auto-build again.');
     addToast({
       type: 'info',
       title: 'Canvas cleared',
@@ -798,21 +1130,31 @@ function WorkflowBuilderInner() {
     <div className="flex flex-col lg:flex-row h-full">
       <div className="w-full lg:w-72 bg-slate-900/50 border-r border-b lg:border-b-0 border-slate-800 p-3 flex flex-col max-h-[38vh] lg:max-h-none">
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-slate-300 mb-1">Nodes</h3>
-          {nodeTemplates.map((template) => {
-            const Icon = template.icon;
-            return (
-              <div
-                key={template.type}
-                draggable
-                onDragStart={(e) => onDragStart(e, template.type)}
-                className={`flex items-center gap-2 px-3 py-2 bg-slate-800 rounded-lg border border-slate-700 cursor-grab transition-all duration-200 ${template.hoverClass}`}
-              >
-                <Icon className={`w-4 h-4 ${template.iconClass}`} />
-                <span className="text-sm text-slate-300">{template.label}</span>
-              </div>
-            );
-          })}
+          <h3 className="text-sm font-semibold text-slate-300">Manual Nodes (Optional)</h3>
+          <p className="text-xs text-slate-500">
+            Recommended flow is prompt auto-build. Open this only if you need manual drag-and-drop.
+          </p>
+          <details className="rounded-lg border border-slate-700 bg-slate-900/40 p-2">
+            <summary className="cursor-pointer text-xs font-medium text-slate-300">
+              Open Node Palette
+            </summary>
+            <div className="mt-2 space-y-2">
+              {nodeTemplates.map((template) => {
+                const Icon = template.icon;
+                return (
+                  <div
+                    key={template.type}
+                    draggable
+                    onDragStart={(e) => onDragStart(e, template.type)}
+                    className={`flex items-center gap-2 px-3 py-2 bg-slate-800 rounded-lg border border-slate-700 cursor-grab transition-all duration-200 ${template.hoverClass}`}
+                  >
+                    <Icon className={`w-4 h-4 ${template.iconClass}`} />
+                    <span className="text-sm text-slate-300">{template.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </details>
         </div>
 
         <div className="mt-4 border-t border-slate-800 pt-3 flex-1 overflow-y-auto">
@@ -907,6 +1249,41 @@ function WorkflowBuilderInner() {
               {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
               {isRunning ? 'Running...' : 'Run Workflow'}
             </Button>
+          </div>
+        </div>
+
+        <div className="border-b border-slate-800 bg-slate-900/30 px-3 md:px-4 py-3">
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-900/20 p-3 md:p-4">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-emerald-200 flex items-center gap-2">
+                  <WandSparkles className="w-4 h-4" />
+                  Prompt-to-Workflow Auto Build
+                </h3>
+                <p className="text-xs text-emerald-300/80 mt-1">
+                  Just type your goal. Workflow is generated automatically.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => buildWorkflowFromPrompt(workflowPrompt, 'manual')}
+                disabled={workflowPrompt.trim().length < 3}
+              >
+                <WandSparkles className="w-4 h-4" />
+                Build Now
+              </Button>
+            </div>
+            <div className="mt-3">
+              <Textarea
+                value={workflowPrompt}
+                onChange={(event) => setWorkflowPrompt(event.target.value)}
+                placeholder="Example: Build a workflow that creates landing page copy for skincare product, then uppercase the final headline."
+                rows={3}
+                className="text-sm"
+              />
+            </div>
+            <p className="mt-2 text-xs text-slate-300">{autoBuildStatus}</p>
           </div>
         </div>
 
