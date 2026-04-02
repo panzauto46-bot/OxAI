@@ -256,15 +256,19 @@ function buildDesignSystemInstruction(designTarget: DesignTarget): string {
     'Design mode is ON. You are both a senior UI/UX designer and frontend engineer.',
     `Primary target: ${getDesignTargetLabel(designTarget)}.`,
     'Do not return plain or generic UI. The visual direction must feel intentional and premium.',
+    'Never use placeholder snippets like "..." or incomplete code.',
     'Always include these sections in this order:',
     '1) Design Concept (style direction, user persona fit, UX rationale).',
     '2) Feature Breakdown (main sections/components and interaction flow).',
     '3) Implementation (full code).',
     'Implementation rules:',
-    '- Always include at least one ```html``` block and one ```css``` block.',
+    '- Always include a complete, renderable implementation.',
+    '- Prefer one full HTML document in ```html``` (with <style> and optional <script>).',
+    '- If you also provide separate ```css``` / ```js``` blocks, they must be complete and production-ready.',
     '- Prefer custom CSS variables for color, spacing, radius, shadows, and typography scale.',
     '- Use strong layout hierarchy, responsive behavior, and states (hover/focus/active).',
-    '- Avoid default/system-looking UI. Add visual depth using gradients, contrast, or surfaces.',
+    '- Avoid default/system-looking UI. Add visual depth with gradients, elevation, and refined spacing.',
+    '- Use expressive but clean styling (not boring, not noisy).',
     '- If useful, include a small ```js``` block for interactions.',
   ].join('\n');
 }
@@ -278,6 +282,54 @@ function buildDesignExecutionBrief(messageInput: string, designTarget: DesignTar
     '- Include a clear feature structure (hero, nav, sections, CTA, forms/cards if relevant).',
     '- Output must be renderable directly in preview using HTML/CSS code blocks.',
   ].join('\n');
+}
+
+function buildDesignPolishInstruction(messageInput: string, designTarget: DesignTarget): string {
+  return [
+    'Quality upgrade request: the previous design is too basic.',
+    `Rebuild the same product request in a premium style for ${getDesignTargetLabel(designTarget)}.`,
+    `Original request: ${messageInput}`,
+    'Output format must still be:',
+    '1) Design Concept',
+    '2) Feature Breakdown',
+    '3) Full implementation code',
+    'Visual quality requirements:',
+    '- Strong visual hierarchy and spacing rhythm',
+    '- Modern color system with depth and contrast',
+    '- Better typography scale and button ergonomics',
+    '- Distinct interactive states and cleaner component polish',
+    '- No bare default controls',
+    'Return complete renderable code with no placeholders.',
+  ].join('\n');
+}
+
+function countMatches(text: string, expression: RegExp): number {
+  const matches = text.match(expression);
+  return matches ? matches.length : 0;
+}
+
+function isLowFidelityDesign(code: string): boolean {
+  const normalized = code.toLowerCase();
+  const lengthScore = normalized.length > 1600 ? 1 : 0;
+  const hasGradient = /(linear-gradient|radial-gradient|conic-gradient)/.test(normalized) ? 1 : 0;
+  const hasShadow = /box-shadow/.test(normalized) ? 1 : 0;
+  const hasRadius = /border-radius/.test(normalized) ? 1 : 0;
+  const hasVariables = /:root\s*\{[\s\S]*--/.test(normalized) ? 1 : 0;
+  const hasTransitions = /(transition|transform)/.test(normalized) ? 1 : 0;
+  const hasLayout = /(display:\s*grid|display:\s*flex)/.test(normalized) ? 1 : 0;
+  const buttonCount = countMatches(normalized, /<button/g);
+
+  const score =
+    lengthScore +
+    hasGradient +
+    hasShadow +
+    hasRadius +
+    hasVariables +
+    hasTransitions +
+    hasLayout +
+    (buttonCount >= 8 ? 1 : 0);
+
+  return score < 6;
 }
 
 interface AgentBlueprint {
@@ -725,6 +777,36 @@ export function AgentBuilder() {
             assistantContent = repaired.content;
             preview = repairedPreview;
             setPreviewStatus('Preview auto-enhanced from structured design output.');
+          }
+        }
+      }
+
+      if (designMode && preview && isLowFidelityDesign(preview.code)) {
+        const polishInstruction = buildDesignPolishInstruction(messageInput, designTarget);
+        const polished = await callOxloAPI(
+          apiKey,
+          selectedModel,
+          [
+            ...messages,
+            { role: 'assistant', content: assistantContent },
+            { role: 'user', content: polishInstruction },
+          ],
+          0.88,
+          3600
+        );
+
+        if (!polished.error && polished.content.trim()) {
+          const polishedPreview = buildPreviewDocument(polished.content);
+          if (polishedPreview) {
+            const improved =
+              !isLowFidelityDesign(polishedPreview.code) ||
+              polishedPreview.code.length > preview.code.length + 160;
+
+            if (improved) {
+              assistantContent = polished.content;
+              preview = polishedPreview;
+              setPreviewStatus('Preview upgraded to a higher-fidelity UI/UX design.');
+            }
           }
         }
       }
