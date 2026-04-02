@@ -343,6 +343,279 @@ interface AgentBlueprint {
   templateName: string;
 }
 
+function isCalculatorRequest(input: string): boolean {
+  return /(calculator|kalkulator|calc\b|hitung)/i.test(input);
+}
+
+function buildPremiumCalculatorResponse(userGoal: string, designTarget: DesignTarget): string {
+  const targetLabel =
+    designTarget === 'mobile'
+      ? 'mobile-first'
+      : designTarget === 'web'
+      ? 'desktop-first'
+      : 'responsive desktop-mobile';
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Premium Calculator</title>
+  <style>
+    :root{
+      --bg-1:#10002b;
+      --bg-2:#3a0ca3;
+      --surface:rgba(18, 14, 43, .72);
+      --surface-2:rgba(34, 24, 72, .9);
+      --text:#f8f7ff;
+      --muted:#b6b2d4;
+      --accent:#ff7b00;
+      --accent-2:#ff9e00;
+      --key:#5a4e87;
+      --key-hover:#6a5a9c;
+      --radius-xl:28px;
+      --radius-lg:16px;
+      --shadow-1:0 24px 60px rgba(5,2,20,.45);
+      --shadow-2:inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family:"Poppins","Segoe UI",system-ui,-apple-system,sans-serif;
+      background:
+        radial-gradient(1200px 800px at 15% 10%, #4f0d9f 0%, transparent 55%),
+        radial-gradient(1000px 700px at 90% 90%, #1f4ed8 0%, transparent 50%),
+        linear-gradient(145deg,var(--bg-1),var(--bg-2));
+      display:grid;
+      place-items:center;
+      padding:18px;
+    }
+    .app{
+      width:min(420px,95vw);
+      background:var(--surface);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:var(--radius-xl);
+      box-shadow:var(--shadow-1),var(--shadow-2);
+      backdrop-filter:blur(12px);
+      overflow:hidden;
+      animation:rise .55s ease-out both;
+    }
+    .top{
+      padding:20px 20px 10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .meta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:12px;
+      color:var(--muted);
+      font-size:.74rem;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .display{
+      min-height:96px;
+      border-radius:20px;
+      background:linear-gradient(180deg,#2b2055,#1d163b);
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:inset 0 10px 30px rgba(0,0,0,.25);
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:flex-end;
+      padding:12px 16px;
+      gap:4px;
+    }
+    .history{
+      min-height:20px;
+      font-size:.9rem;
+      color:#a8a2cb;
+      opacity:.92;
+      font-variant-numeric:tabular-nums;
+      max-width:100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .result{
+      font-size:clamp(2rem,5vw,2.7rem);
+      font-weight:700;
+      line-height:1;
+      color:#fff;
+      text-shadow:0 6px 18px rgba(0,0,0,.34);
+      font-variant-numeric:tabular-nums;
+      max-width:100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .keys{
+      padding:16px 16px 18px;
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      background:var(--surface-2);
+    }
+    button{
+      border:0;
+      border-radius:14px;
+      background:var(--key);
+      color:#fff;
+      font-size:1.18rem;
+      font-weight:600;
+      min-height:58px;
+      cursor:pointer;
+      transition:transform .12s ease, filter .2s ease, background .2s ease;
+      box-shadow:0 8px 18px rgba(0,0,0,.18);
+    }
+    button:hover{transform:translateY(-1px);background:var(--key-hover)}
+    button:active{transform:translateY(1px) scale(.99)}
+    .op{
+      background:linear-gradient(160deg,var(--accent),var(--accent-2));
+      color:#fff;
+    }
+    .op:hover{filter:brightness(1.08)}
+    .muted{background:#6f6794;color:#f4f0ff}
+    .wide{grid-column:span 2}
+    .hint{
+      padding:0 18px 16px;
+      color:var(--muted);
+      font-size:.75rem;
+      text-align:center;
+    }
+    @keyframes rise{
+      from{opacity:0;transform:translateY(18px) scale(.98)}
+      to{opacity:1;transform:translateY(0) scale(1)}
+    }
+    @media (max-width:430px){
+      .app{border-radius:22px}
+      .keys{gap:10px}
+      button{min-height:54px;font-size:1.06rem}
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="top">
+      <div class="meta">
+        <span>Premium Calculator</span>
+        <span>${targetLabel}</span>
+      </div>
+      <div class="display" aria-live="polite">
+        <div class="history" id="history"></div>
+        <div class="result" id="result">0</div>
+      </div>
+    </section>
+    <section class="keys">
+      <button class="muted" data-action="clear">AC</button>
+      <button class="muted" data-action="delete">⌫</button>
+      <button class="muted" data-value="%">%</button>
+      <button class="op" data-value="/">÷</button>
+
+      <button data-value="7">7</button>
+      <button data-value="8">8</button>
+      <button data-value="9">9</button>
+      <button class="op" data-value="*">×</button>
+
+      <button data-value="4">4</button>
+      <button data-value="5">5</button>
+      <button data-value="6">6</button>
+      <button class="op" data-value="-">−</button>
+
+      <button data-value="1">1</button>
+      <button data-value="2">2</button>
+      <button data-value="3">3</button>
+      <button class="op" data-value="+">+</button>
+
+      <button data-value="0" class="wide">0</button>
+      <button data-value=".">.</button>
+      <button class="op" data-action="equals">=</button>
+    </section>
+    <p class="hint">Built for smooth interaction and clean readability.</p>
+  </main>
+
+  <script>
+    const historyEl = document.getElementById('history');
+    const resultEl = document.getElementById('result');
+    const keys = document.querySelector('.keys');
+    let expression = '';
+
+    function render() {
+      if (!expression) {
+        historyEl.textContent = '';
+        resultEl.textContent = '0';
+        return;
+      }
+      historyEl.textContent = expression;
+      resultEl.textContent = expression;
+    }
+
+    function safeEval(exp) {
+      const sanitized = exp.replace(/[^0-9+\\-*/%.()]/g, '');
+      if (!sanitized) return '0';
+      try {
+        const value = Function('"use strict"; return (' + sanitized + ')')();
+        if (!Number.isFinite(value)) return 'Error';
+        return Number(value.toFixed(8)).toString();
+      } catch {
+        return 'Error';
+      }
+    }
+
+    keys.addEventListener('click', (event) => {
+      const target = event.target.closest('button');
+      if (!target) return;
+      const action = target.dataset.action;
+      const value = target.dataset.value;
+
+      if (action === 'clear') {
+        expression = '';
+        render();
+        return;
+      }
+      if (action === 'delete') {
+        expression = expression.slice(0, -1);
+        render();
+        return;
+      }
+      if (action === 'equals') {
+        const evaluated = safeEval(expression);
+        historyEl.textContent = expression + ' =';
+        expression = evaluated === 'Error' ? '' : evaluated;
+        resultEl.textContent = evaluated;
+        return;
+      }
+      if (value) {
+        expression += value;
+        render();
+      }
+    });
+  </script>
+</body>
+</html>`;
+
+  return [
+    'Design Concept',
+    `A premium, modern calculator UI inspired by fintech app aesthetics. It uses deep gradient backgrounds, glassmorphism surface layers, ergonomic key sizing, and high-contrast typography for fast readability.`,
+    '',
+    'Feature Breakdown',
+    '- Target: ' + targetLabel,
+    '- Layered visual depth with gradient atmosphere + blurred card container',
+    '- Large keypad with clear operator separation and strong tap targets',
+    '- Live expression history + result area with tabular numeric readability',
+    '- Smooth hover/press states for better perceived quality',
+    '',
+    `User request captured: ${userGoal}`,
+    '',
+    'Implementation',
+    '```html',
+    html,
+    '```',
+  ].join('\n');
+}
+
 const templateKeywordMap: Record<string, string[]> = {
   'app-builder': [
     'build',
@@ -409,14 +682,20 @@ function inferDesignMode(goal: string): { designMode: boolean; designTarget: Des
 
 function inferAgentBlueprint(goal: string): AgentBlueprint {
   const lower = goal.toLowerCase();
+  const appBuilderTemplate = agentTemplates.find((template) => template.id === 'app-builder') || agentTemplates[0];
+  const shouldForceAppBuilder = /(buat|build|create|design|ui|ux|app|aplikasi|website|landing|dashboard|calculator|kalkulator|prototype)/.test(lower);
 
-  const scoredTemplates = agentTemplates.map((template) => {
-    const keywords = templateKeywordMap[template.id] || [];
-    const score = keywords.reduce((sum, keyword) => sum + (lower.includes(keyword) ? 1 : 0), 0);
-    return { template, score };
-  });
-  scoredTemplates.sort((a, b) => b.score - a.score);
-  const selectedTemplate = scoredTemplates[0]?.template || agentTemplates[0];
+  const selectedTemplate = shouldForceAppBuilder
+    ? appBuilderTemplate
+    : (() => {
+        const scoredTemplates = agentTemplates.map((template) => {
+          const keywords = templateKeywordMap[template.id] || [];
+          const score = keywords.reduce((sum, keyword) => sum + (lower.includes(keyword) ? 1 : 0), 0);
+          return { template, score };
+        });
+        scoredTemplates.sort((a, b) => b.score - a.score);
+        return scoredTemplates[0]?.template || agentTemplates[0];
+      })();
 
   const extraTools: string[] = [];
   if (/(hitung|calculate|math|formula)/.test(lower)) extraTools.push('calculator');
@@ -807,6 +1086,19 @@ export function AgentBuilder() {
               preview = polishedPreview;
               setPreviewStatus('Preview upgraded to a higher-fidelity UI/UX design.');
             }
+          }
+        }
+      }
+
+      if (designMode && isCalculatorRequest(messageInput)) {
+        const calculatorNeedsUpgrade = !preview || isLowFidelityDesign(preview.code);
+        if (calculatorNeedsUpgrade) {
+          const premiumCalculatorResponse = buildPremiumCalculatorResponse(messageInput, designTarget);
+          const premiumPreview = buildPreviewDocument(premiumCalculatorResponse);
+          if (premiumPreview) {
+            assistantContent = premiumCalculatorResponse;
+            preview = premiumPreview;
+            setPreviewStatus('Preview upgraded with premium calculator blueprint.');
           }
         }
       }
