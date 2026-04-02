@@ -1083,8 +1083,10 @@ export function AgentBuilder() {
     const messageInput = chatInput.trim();
     const inferredTarget = inferDesignMode(messageInput).designTarget;
     const effectiveDesignTarget = designMode ? designTarget : inferredTarget;
-    const alwaysBuilderMode = true;
-    const shouldGenerateCode = alwaysBuilderMode || designMode || isBuildIntent(messageInput);
+    const shouldGenerateCode = isBuildIntent(messageInput);
+    if (!shouldGenerateCode) {
+      setCenterPanelMode('chat');
+    }
     const userMessage: Message = { role: 'user', content: messageInput };
     addAgentMessage(userMessage);
     setChatInput('');
@@ -1107,7 +1109,11 @@ export function AgentBuilder() {
 
     const runtimeSystemPrompt = shouldGenerateCode
       ? `${generatedSystemPrompt}\n\n${buildDesignSystemInstruction(effectiveDesignTarget)}`
-      : generatedSystemPrompt;
+      : [
+          'You are a helpful assistant.',
+          'Answer user requests clearly and practically in the same language style as the user.',
+          'Do not generate website/app code unless the user explicitly asks to build or create code.',
+        ].join('\n');
 
     const messages = [
       { role: 'system' as const, content: runtimeSystemPrompt },
@@ -1227,6 +1233,10 @@ export function AgentBuilder() {
             'No renderable HTML/CSS detected yet. Ask: "Generate full HTML and CSS for this UI now."'
           );
         }
+      } else {
+        setPreviewSrcDoc('');
+        setPreviewCode('');
+        setPreviewStatus('Send a build prompt to generate live code and preview.');
       }
     }
 
