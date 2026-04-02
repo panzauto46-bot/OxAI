@@ -1,20 +1,20 @@
-﻿<p align="center">
-  <img src="docs/images/landing-page.png" alt="OxAI â€” Visual AI Studio" width="100%" />
+<p align="center">
+  <img src="docs/images/landing-page.png" alt="OxAI Visual AI Studio" width="100%" />
 </p>
 
-<h1 align="center">ðŸ§  OxAI â€” Visual AI Studio</h1>
+<h1 align="center">OxAI - Visual AI Studio</h1>
 
 <p align="center">
   <strong>Build, compare, and launch AI systems from one professional workspace.</strong>
 </p>
 
 <p align="center">
-  <a href="https://oxai-puce.vercel.app">ðŸŒ Live Demo</a> â€¢
-  <a href="#-core-modules">ðŸ“¦ Features</a> â€¢
-  <a href="#-architecture">ðŸ—ï¸ Architecture</a> â€¢
-  <a href="#-quick-start">ðŸš€ Quick Start</a> â€¢
-  <a href="#-tech-stack">ðŸ”§ Tech Stack</a> â€¢
-  <a href="#-oxloai-models">ðŸ¤– Models</a>
+  <a href="https://oxai-puce.vercel.app">Live Demo</a> |
+  <a href="#core-modules">Features</a> |
+  <a href="#architecture">Architecture</a> |
+  <a href="#quick-start">Quick Start</a> |
+  <a href="#tech-stack">Tech Stack</a> |
+  <a href="#oxloai-models">Models</a>
 </p>
 
 <p align="center">
@@ -28,33 +28,33 @@
 
 ---
 
-## ðŸ“‹ Table of Contents
+## Table of Contents
 
-- [About](#-about)
-- [Real-World Use Case](#-real-world-use-case)
-- [Live Demo](#-live-demo)
-- [Core Modules](#-core-modules)
-  - [Prompt Studio](#1--prompt-studio)
-  - [Workflow Builder](#2--workflow-builder)
-  - [Agent Builder](#3--agent-builder)
-  - [Content Pipeline](#4--content-pipeline)
-- [Architecture](#-architecture)
-- [Workflow Execution Engine](#-workflow-execution-engine)
-- [Tech Stack](#-tech-stack)
-- [Oxlo.ai Models](#-oxloai-models)
-- [Quick Start](#-quick-start)
-- [Deployment](#-deployment)
-- [GitHub Login Setup](#-github-login-setup)
-- [Project Structure](#-project-structure)
-- [Sharing & Embed](#-sharing--embed)
-- [Hackathon Info](#-hackathon-info)
-- [License](#-license)
+- [About](#about)
+- [Real-World Use Case](#real-world-use-case)
+- [Live Demo](#live-demo)
+- [Core Modules](#core-modules)
+  - [Prompt Studio](#1-prompt-studio)
+  - [Workflow Builder](#2-workflow-builder)
+  - [Agent Builder](#3-agent-builder)
+  - [Content Pipeline](#4-content-pipeline)
+- [Architecture](#architecture)
+- [Workflow Execution Engine](#workflow-execution-engine)
+- [Tech Stack](#tech-stack)
+- [Oxlo.ai Models](#oxloai-models)
+- [Quick Start](#quick-start)
+- [Deployment](#deployment)
+- [GitHub Login Setup](#github-login-setup)
+- [Project Structure](#project-structure)
+- [Sharing and Embed](#sharing-and-embed)
+- [Hackathon Info](#hackathon-info)
+- [License](#license)
 
 ---
 
-## ðŸŽ¯ About
+## About
 
-**OxAI** is a browser-based AI Studio that lets anyone â€” developer or non-technical user â€” visually build, test, version, and deploy AI workflows and agents without infrastructure complexity.
+**OxAI** is a browser-based AI Studio that lets anyone -- developer or non-technical user -- visually build, test, version, and deploy AI workflows and agents without infrastructure complexity.
 
 Users drag, connect, and configure AI-powered nodes on a canvas, then run them instantly using **Oxlo.ai's unified multi-model API**. Think of it as a combination of **n8n + PromptLayer + Flowise**, but leaner, faster, and fully powered by Oxlo.ai.
 
@@ -64,28 +64,28 @@ Building AI-powered applications today requires juggling multiple tools:
 
 | Problem | OxAI Solution |
 |---------|---------------|
-| One tool to write and test prompts | **Prompt Studio** â€” write, compare, version, and rate |
-| Another to chain models together | **Workflow Builder** â€” visual drag & drop canvas |
-| Another to manage AI agents | **Agent Builder** â€” persona, tools, deploy in one click |
-| Another to run content pipelines | **Content Pipeline** â€” batch generation with export |
+| One tool to write and test prompts | **Prompt Studio** -- write, compare, version, and rate |
+| Another to chain models together | **Workflow Builder** -- visual drag and drop canvas |
+| Another to manage AI agents | **Agent Builder** -- persona, tools, deploy in one click |
+| Another to run content pipelines | **Content Pipeline** -- batch generation with export |
 
 **OxAI unifies all of this in a single, zero-setup, browser-first experience.**
 
 ---
 
-## ðŸ’¡ Real-World Use Case
+## Real-World Use Case
 
 Teams can prototype and test AI automations without backend setup:
 
-- **Marketing Teams** â†’ Batch-generate blog posts, social media content, and translations
-- **Developers** â†’ Build and test multi-step AI workflows with condition logic
-- **Product Managers** â†’ Compare model performance side-by-side for better decisions
-- **Support Teams** â†’ Deploy custom AI agents with FAQ and tool routing
-- **Content Creators** â†’ Run multi-stage content pipelines with SEO optimization
+- **Marketing Teams** -- Batch-generate blog posts, social media content, and translations
+- **Developers** -- Build and test multi-step AI workflows with condition logic
+- **Product Managers** -- Compare model performance side-by-side for better decisions
+- **Support Teams** -- Deploy custom AI agents with FAQ and tool routing
+- **Content Creators** -- Run multi-stage content pipelines with SEO optimization
 
 ---
 
-## ðŸŒ Live Demo
+## Live Demo
 
 > **Production URL:** [https://oxai-puce.vercel.app](https://oxai-puce.vercel.app)
 >
@@ -93,9 +93,9 @@ Teams can prototype and test AI automations without backend setup:
 
 ---
 
-## ðŸ“¦ Core Modules
+## Core Modules
 
-### 1. ðŸ§ª Prompt Studio
+### 1. Prompt Studio
 
 <p align="center">
   <img src="docs/images/prompt-studio.png" alt="Prompt Studio" width="100%" />
@@ -112,11 +112,11 @@ The Prompt Studio is a full-featured prompt engineering environment with multi-m
 | **Version Diff Viewer** | Line-by-line diff comparison between any two saved versions |
 | **Prompt Rating** | Rate outputs 1-5 stars, auto-track best-performing version |
 | **Model Health Check** | Ping all 6 configured models to verify API connectivity |
-| **Keyboard Shortcuts** | `Ctrl+Enter` to run, `Ctrl+S` to save version |
+| **Keyboard Shortcuts** | Ctrl+Enter to run, Ctrl+S to save version |
 
 ---
 
-### 2. ðŸ”§ Workflow Builder
+### 2. Workflow Builder
 
 <p align="center">
   <img src="docs/images/workflow-builder.png" alt="Workflow Builder" width="100%" />
@@ -127,10 +127,10 @@ A visual drag-and-drop workflow canvas powered by React Flow:
 | Feature | Description |
 |---------|-------------|
 | **5 Node Types** | Input, AI Model, Transform, Condition, Output |
-| **Drag & Drop** | Drag nodes from palette onto canvas |
+| **Drag and Drop** | Drag nodes from palette onto canvas |
 | **Visual Connections** | Connect nodes with animated emerald edges |
 | **Topological Execution** | Smart graph traversal with per-node status tracking |
-| **Condition Branching** | If/else routing with `true`/`false` output handles |
+| **Condition Branching** | If/else routing with true/false output handles |
 | **Per-Node Results** | Each node shows its output, errors, or skip reason |
 | **Workflow Management** | Save, load, duplicate, delete, rename workflows |
 | **Export JSON** | Download workflow as a portable JSON file |
@@ -139,7 +139,7 @@ A visual drag-and-drop workflow canvas powered by React Flow:
 
 ---
 
-### 3. ðŸ¤– Agent Builder
+### 3. Agent Builder
 
 <p align="center">
   <img src="docs/images/agent-builder.png" alt="Agent Builder" width="100%" />
@@ -150,7 +150,7 @@ Build and deploy AI agents with persona configuration and tool routing:
 | Feature | Description |
 |---------|-------------|
 | **4 Templates** | Customer Support, Research Assistant, Code Reviewer, Content Writer |
-| **Persona & Instructions** | Define personality and behavioral guidelines |
+| **Persona and Instructions** | Define personality and behavioral guidelines |
 | **6 Tools** | Summarizer, Web Search, Calculator, Code Analyzer, Tone Adjuster, FAQ |
 | **Tool Trace Display** | See which tools were triggered and their outputs |
 | **Multi-Turn Chat** | Full conversation context sent with each message |
@@ -161,7 +161,7 @@ Build and deploy AI agents with persona configuration and tool routing:
 
 ---
 
-### 4. ðŸ“¦ Content Pipeline
+### 4. Content Pipeline
 
 <p align="center">
   <img src="docs/images/content-pipeline.png" alt="Content Pipeline" width="100%" />
@@ -180,7 +180,7 @@ Multi-stage content generation pipeline with batch processing:
 
 ---
 
-## ðŸ—ï¸ Architecture
+## Architecture
 
 <p align="center">
   <img src="docs/images/architecture.png" alt="OxAI Architecture Diagram" width="100%" />
@@ -188,21 +188,72 @@ Multi-stage content generation pipeline with batch processing:
 
 ### System Architecture
 
-Architecture diagram is shown in the image above (`docs/images/architecture.png`).
+```
++------------------------------------------------------------------+
+|                    Browser Client (React 19)                      |
+|                                                                    |
+|  +-------------------+  +-------------------+                     |
+|  | Landing Page      |  | App Router        |                     |
+|  | GitHub OAuth Login |  | Lazy Loading      |                     |
+|  +-------------------+  | Hash Routing      |                     |
+|                          +-------------------+                     |
+|                                  |                                 |
+|  +------------+  +------------+  +------------+  +------------+   |
+|  | Prompt     |  | Workflow   |  | Agent      |  | Content    |   |
+|  | Studio     |  | Builder    |  | Builder    |  | Pipeline   |   |
+|  +------------+  +------------+  +------------+  +------------+   |
+|                          |                                         |
+|              +-----------------------+                             |
+|              | Zustand State Store   |                             |
+|              | (localStorage persist)|                             |
+|              +-----------------------+                             |
++------------------------------------------------------------------+
+                           |
+              +------------------------+
+              |    Service Layer       |
+              |                        |
+              |  oxloApi.ts            |
+              |  githubAuth.ts         |
+              +------------------------+
+                     |            |
+          +----------+            +----------+
+          |                                  |
++-----------------+              +-------------------+
+| Oxlo.ai API     |              | Vercel Serverless |
+| /v1/chat/       |              | api/auth/github/  |
+| completions     |              | exchange.js       |
++-----------------+              +-------------------+
+  |  |  |  |  |  |                        |
+  6 AI Models                     +---------------+
+  (see below)                     | GitHub OAuth  |
+                                  +---------------+
+```
 
 ### Data Flow
 
-User request flow:
+```
+User --> OxAI UI --> Zustand Store --> Oxlo.ai API
+                                          |
+                                          v
+                                   Model Response
+                                   (content + tokens + latency)
+                                          |
+                                          v
+                               Store Results --> Display Output
+```
 
-1. User enters prompt or config in OxAI UI.
-2. UI updates Zustand state.
-3. UI sends request to Oxlo.ai API.
-4. API response returns content, token usage, and latency.
-5. UI stores result and displays output.
+**Step-by-step:**
+
+1. User enters prompt or configures workflow in OxAI UI
+2. UI updates Zustand state
+3. User clicks Run / Execute
+4. UI sends POST to Oxlo.ai `/v1/chat/completions`
+5. API returns model response with content, token count, and latency
+6. UI stores results and displays output with metrics
 
 ---
 
-## âš™ï¸ Workflow Execution Engine
+## Workflow Execution Engine
 
 <p align="center">
   <img src="docs/images/workflow-engine.png" alt="Workflow Execution Engine" width="100%" />
@@ -210,22 +261,28 @@ User request flow:
 
 The Workflow Builder includes a production-grade execution engine:
 
-Execution path:
-
-`Input Node -> AI Model Node -> Transform Node -> Condition Node -> Output Node`
+```
+Input Node --> AI Model Node --> Transform Node --> Condition Node
+                                                       |
+                                              +--------+--------+
+                                              |                 |
+                                         [TRUE branch]    [FALSE branch]
+                                              |                 |
+                                         Output Node      Output Node
+```
 
 **Engine Features:**
 
-- **Topological Sort** â€” resolves node execution order from the graph structure
-- **Blocked Edge Tracking** â€” condition nodes block edges on the inactive branch
-- **Skip Detection** â€” nodes on blocked branches are marked as "skipped"
-- **Error Isolation** â€” a failing node doesn't crash the entire workflow
-- **Circular Dependency Detection** â€” breaks infinite loops gracefully
-- **Live Status Updates** â€” each node shows `idle` â†’ `loading` â†’ `success` / `error` / `skipped`
+- **Topological Sort** -- resolves node execution order from the graph structure
+- **Blocked Edge Tracking** -- condition nodes block edges on the inactive branch
+- **Skip Detection** -- nodes on blocked branches are marked as "skipped"
+- **Error Isolation** -- a failing node does not crash the entire workflow
+- **Circular Dependency Detection** -- breaks infinite loops gracefully
+- **Live Status Updates** -- each node shows idle > loading > success / error / skipped
 
 ---
 
-## ðŸ”§ Tech Stack
+## Tech Stack
 
 <p align="center">
   <img src="docs/images/tech-stack.png" alt="Tech Stack" width="100%" />
@@ -245,26 +302,24 @@ Execution path:
 | **Deployment** | Vercel | Edge-optimized hosting with serverless functions |
 | **AI Backend** | Oxlo.ai API | Multi-model inference gateway |
 
-### Build Optimization
-
-Code splitting is configured for optimal loading performance:
+### Build Output (Code Splitting)
 
 ```
 dist/
-â”œâ”€â”€ index.js          235 KB (74 KB gzip)  â† React + core framework
-â”œâ”€â”€ flow.js           142 KB (46 KB gzip)  â† React Flow (lazy loaded)
-â”œâ”€â”€ WorkflowBuilder    23 KB ( 6 KB gzip)  â† Lazy loaded
-â”œâ”€â”€ PromptStudio       14 KB ( 4 KB gzip)  â† Lazy loaded
-â”œâ”€â”€ ContentPipeline    14 KB ( 4 KB gzip)  â† Lazy loaded
-â”œâ”€â”€ AgentBuilder       13 KB ( 5 KB gzip)  â† Lazy loaded
-â”œâ”€â”€ icons              20 KB ( 8 KB gzip)  â† Lucide icons chunk
-â”œâ”€â”€ state               7 KB ( 3 KB gzip)  â† Zustand chunk
-â””â”€â”€ CSS (total)        74 KB (13 KB gzip)
+  index.js          235 KB (74 KB gzip)   -- React + core framework
+  flow.js           142 KB (46 KB gzip)   -- React Flow (lazy loaded)
+  WorkflowBuilder    23 KB ( 6 KB gzip)   -- Lazy loaded
+  PromptStudio       14 KB ( 4 KB gzip)   -- Lazy loaded
+  ContentPipeline    14 KB ( 4 KB gzip)   -- Lazy loaded
+  AgentBuilder       13 KB ( 5 KB gzip)   -- Lazy loaded
+  icons              20 KB ( 8 KB gzip)   -- Lucide icons chunk
+  state               7 KB ( 3 KB gzip)   -- Zustand chunk
+  CSS (total)        74 KB (13 KB gzip)
 ```
 
 ---
 
-## ðŸ¤– Oxlo.ai Models
+## Oxlo.ai Models
 
 OxAI is configured with **6 models** across 4 providers for comprehensive coverage:
 
@@ -279,14 +334,14 @@ OxAI is configured with **6 models** across 4 providers for comprehensive covera
 
 **Why this mix?**
 
-- **Quality vs Speed profiles** â€” users can compare response quality across tiers
-- **Cost optimization** â€” mini/haiku models for iteration, premium models for production
-- **Model-fit testing** â€” find the right model for each specific use case
-- **Multi-model comparison** â€” Prompt Studio runs the same prompt on 2-3 models simultaneously
+- **Quality vs Speed profiles** -- users can compare response quality across tiers
+- **Cost optimization** -- mini/haiku models for iteration, premium models for production
+- **Model-fit testing** -- find the right model for each specific use case
+- **Multi-model comparison** -- Prompt Studio runs the same prompt on 2-3 models simultaneously
 
 ---
 
-## ðŸš€ Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -333,7 +388,7 @@ npm run preview
 
 ---
 
-## â˜ï¸ Deployment
+## Deployment
 
 ### Deploy to Vercel
 
@@ -345,8 +400,8 @@ npx vercel --prod --yes
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `VITE_GITHUB_CLIENT_ID` | GitHub OAuth App Client ID | âœ… |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth App Client Secret | âœ… |
+| `VITE_GITHUB_CLIENT_ID` | GitHub OAuth App Client ID | Yes |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App Client Secret | Yes |
 
 ### Deployment Config (`vercel.json`)
 
@@ -360,111 +415,113 @@ npx vercel --prod --yes
 
 ---
 
-## ðŸ” GitHub Login Setup
+## GitHub Login Setup
 
 1. **Create a GitHub OAuth App** in [GitHub Developer Settings](https://github.com/settings/developers)
 2. Set **Homepage URL** to your app URL
 3. Set **Authorization callback URL** to your app root URL
 4. Copy the **Client ID** and **Client Secret**
 5. Set environment variables:
-   - `VITE_GITHUB_CLIENT_ID` â€” Client ID (exposed to frontend)
-   - `GITHUB_CLIENT_SECRET` â€” Client Secret (server-side only)
+   - `VITE_GITHUB_CLIENT_ID` -- Client ID (exposed to frontend)
+   - `GITHUB_CLIENT_SECRET` -- Client Secret (server-side only)
 
 **Callback URLs:**
+
 | Environment | URL |
 |-------------|-----|
 | Local | `http://localhost:3000/` (via `vercel dev`) |
 | Production | `https://oxai-puce.vercel.app/` |
 
 **Auth Flow:**
+
 1. User clicks "Login with GitHub" on landing page
 2. Redirected to GitHub OAuth authorization
 3. GitHub redirects back with authorization code
 4. Frontend sends code to `api/auth/github/exchange.js` (Vercel serverless)
 5. Serverless function exchanges code for access token (client secret stays server-side)
 6. Fetches user profile and primary email
-7. Returns user data to frontend â†’ stored in Zustand
+7. Returns user data to frontend, stored in Zustand
 
 ---
 
-## ðŸ“ Project Structure
+## Project Structure
 
 ```
 OxAI/
-â”œâ”€â”€ ðŸ“„ index.html                          # Entry point
-â”œâ”€â”€ ðŸ“„ package.json                        # Dependencies & scripts
-â”œâ”€â”€ ðŸ“„ tsconfig.json                       # Strict TypeScript config
-â”œâ”€â”€ ðŸ“„ vite.config.ts                      # Build config + chunk splitting
-â”œâ”€â”€ ðŸ“„ vercel.json                         # Deployment config
-â”œâ”€â”€ ðŸ“„ .env.example                        # Environment variables template
-â”œâ”€â”€ ðŸ“„ LICENSE                             # MIT License
-â”‚
-â”œâ”€â”€ ðŸ“‚ api/                                # Vercel Serverless Functions
-â”‚   â””â”€â”€ ðŸ“‚ auth/github/
-â”‚       â””â”€â”€ ðŸ“„ exchange.js                 # OAuth token exchange endpoint
-â”‚
-â”œâ”€â”€ ðŸ“‚ docs/                               # Documentation
-â”‚   â”œâ”€â”€ ðŸ“„ PRD.md                          # Product Requirements Document
-â”‚   â”œâ”€â”€ ðŸ“„ ROADMAP.md                      # Development roadmap
-â”‚   â””â”€â”€ ðŸ“‚ images/                         # Screenshots & diagrams
-â”‚
-â””â”€â”€ ðŸ“‚ src/                                # Application source
-    â”œâ”€â”€ ðŸ“„ main.tsx                        # React root
-    â”œâ”€â”€ ðŸ“„ App.tsx                         # Router + OAuth + lazy loading
-    â”œâ”€â”€ ðŸ“„ index.css                       # Global styles + animations
-    â”‚
-    â”œâ”€â”€ ðŸ“‚ store/
-    â”‚   â””â”€â”€ ðŸ“„ useStore.ts                 # Zustand state (persisted)
-    â”‚
-    â”œâ”€â”€ ðŸ“‚ services/
-    â”‚   â”œâ”€â”€ ðŸ“„ oxloApi.ts                  # Oxlo.ai API client
-    â”‚   â””â”€â”€ ðŸ“„ githubAuth.ts              # GitHub OAuth client
-    â”‚
-    â”œâ”€â”€ ðŸ“‚ utils/
-    â”‚   â””â”€â”€ ðŸ“„ cn.ts                       # className merger utility
-    â”‚
-    â””â”€â”€ ðŸ“‚ components/
-        â”œâ”€â”€ ðŸ“‚ landing/
-        â”‚   â””â”€â”€ ðŸ“„ LandingPage.tsx         # Animated landing page
-        â”‚
-        â”œâ”€â”€ ðŸ“‚ layout/
-        â”‚   â”œâ”€â”€ ðŸ“„ Sidebar.tsx             # Smart collapsible sidebar
-        â”‚   â””â”€â”€ ðŸ“„ Header.tsx              # Top bar + API key management
-        â”‚
-        â”œâ”€â”€ ðŸ“‚ common/
-        â”‚   â”œâ”€â”€ ðŸ“„ ApiKeyModal.tsx          # API key setup modal
-        â”‚   â”œâ”€â”€ ðŸ“„ OnboardingTips.tsx       # Contextual onboarding tips
-        â”‚   â””â”€â”€ ðŸ“„ ToastViewport.tsx        # Toast notification system
-        â”‚
-        â”œâ”€â”€ ðŸ“‚ ui/                         # Reusable UI primitives
-        â”‚   â”œâ”€â”€ ðŸ“„ Button.tsx              # CVA variant button
-        â”‚   â”œâ”€â”€ ðŸ“„ Card.tsx                # Card + CardHeader + CardContent
-        â”‚   â”œâ”€â”€ ðŸ“„ Input.tsx               # Labeled input field
-        â”‚   â”œâ”€â”€ ðŸ“„ Select.tsx              # Labeled select dropdown
-        â”‚   â””â”€â”€ ðŸ“„ Textarea.tsx            # Labeled textarea
-        â”‚
-        â”œâ”€â”€ ðŸ“‚ prompt/
-        â”‚   â””â”€â”€ ðŸ“„ PromptStudio.tsx        # Full prompt lab (696 lines)
-        â”‚
-        â”œâ”€â”€ ðŸ“‚ workflow/
-        â”‚   â”œâ”€â”€ ðŸ“„ WorkflowBuilder.tsx     # Visual canvas + engine (916 lines)
-        â”‚   â””â”€â”€ ðŸ“‚ nodes/
-        â”‚       â”œâ”€â”€ ðŸ“„ InputNode.tsx        # User text input node
-        â”‚       â”œâ”€â”€ ðŸ“„ AIModelNode.tsx      # AI model config node
-        â”‚       â”œâ”€â”€ ðŸ“„ TransformNode.tsx    # Data transformation node
-        â”‚       â”œâ”€â”€ ðŸ“„ ConditionNode.tsx    # If/else branching node
-        â”‚       â””â”€â”€ ðŸ“„ OutputNode.tsx       # Result display node
-        â”‚
-        â”œâ”€â”€ ðŸ“‚ agent/
-        â”‚   â””â”€â”€ ðŸ“„ AgentBuilder.tsx         # Agent config + chat (662 lines)
-        â”‚
-        â””â”€â”€ ðŸ“‚ pipeline/
-            â””â”€â”€ ðŸ“„ ContentPipeline.tsx      # Pipeline studio (700+ lines)
+|-- index.html                          # Entry point
+|-- package.json                        # Dependencies & scripts
+|-- tsconfig.json                       # Strict TypeScript config
+|-- vite.config.ts                      # Build config + chunk splitting
+|-- vercel.json                         # Deployment config
+|-- .env.example                        # Environment variables template
+|-- LICENSE                             # MIT License
+|
+|-- api/                                # Vercel Serverless Functions
+|   +-- auth/github/
+|       +-- exchange.js                 # OAuth token exchange endpoint
+|
+|-- docs/                               # Documentation
+|   |-- PRD.md                          # Product Requirements Document
+|   |-- ROADMAP.md                      # Development roadmap
+|   +-- images/                         # Screenshots & diagrams
+|
++-- src/                                # Application source
+    |-- main.tsx                        # React root
+    |-- App.tsx                         # Router + OAuth + lazy loading
+    |-- index.css                       # Global styles + animations
+    |
+    |-- store/
+    |   +-- useStore.ts                 # Zustand state (persisted)
+    |
+    |-- services/
+    |   |-- oxloApi.ts                  # Oxlo.ai API client
+    |   +-- githubAuth.ts              # GitHub OAuth client
+    |
+    |-- utils/
+    |   +-- cn.ts                       # className merger utility
+    |
+    +-- components/
+        |-- landing/
+        |   +-- LandingPage.tsx         # Animated landing page
+        |
+        |-- layout/
+        |   |-- Sidebar.tsx             # Smart collapsible sidebar
+        |   +-- Header.tsx              # Top bar + API key management
+        |
+        |-- common/
+        |   |-- ApiKeyModal.tsx          # API key setup modal
+        |   |-- OnboardingTips.tsx       # Contextual onboarding tips
+        |   +-- ToastViewport.tsx        # Toast notification system
+        |
+        |-- ui/                         # Reusable UI primitives
+        |   |-- Button.tsx              # CVA variant button
+        |   |-- Card.tsx                # Card + CardHeader + CardContent
+        |   |-- Input.tsx               # Labeled input field
+        |   |-- Select.tsx              # Labeled select dropdown
+        |   +-- Textarea.tsx            # Labeled textarea
+        |
+        |-- prompt/
+        |   +-- PromptStudio.tsx        # Full prompt lab (696 lines)
+        |
+        |-- workflow/
+        |   |-- WorkflowBuilder.tsx     # Visual canvas + engine (916 lines)
+        |   +-- nodes/
+        |       |-- InputNode.tsx        # User text input node
+        |       |-- AIModelNode.tsx      # AI model config node
+        |       |-- TransformNode.tsx    # Data transformation node
+        |       |-- ConditionNode.tsx    # If/else branching node
+        |       +-- OutputNode.tsx       # Result display node
+        |
+        |-- agent/
+        |   +-- AgentBuilder.tsx         # Agent config + chat (662 lines)
+        |
+        +-- pipeline/
+            +-- ContentPipeline.tsx      # Pipeline studio (700+ lines)
 ```
 
 ---
 
-## ðŸ”— Sharing & Embed
+## Sharing and Embed
 
 ### Shared Links
 
@@ -492,20 +549,20 @@ After deploying an agent, you get an iframe snippet:
 
 ---
 
-## ðŸ† Hackathon Info
+## Hackathon Info
 
-**Hackathon:** OxBuild by Oxlo.ai  
-**Deadline:** April 5, 2026  
+**Hackathon:** OxBuild by Oxlo.ai
+**Deadline:** April 5, 2026
 **Live Demo:** [https://oxai-puce.vercel.app](https://oxai-puce.vercel.app)
 
 ### Judging Alignment
 
 | Criteria | OxAI's Answer |
 |----------|---------------|
-| **Relevancy** | AI Studio tools are in massive demand â€” every dev and team needs this |
+| **Relevancy** | AI Studio tools are in massive demand -- every dev and team needs this |
 | **Complexity** | Multi-module platform with workflow engine, multi-model orchestration, React Flow canvas, OAuth, serverless functions |
 | **Code Quality** | Strict TypeScript, modular architecture, 0 build errors, code splitting, lazy loading |
-| **API Usage** | Substantial Oxlo.ai usage by design â€” multi-model comparison runs 2-3 API calls per prompt, workflow execution calls per AI node, agent chat sends full conversation context |
+| **API Usage** | Substantial Oxlo.ai usage by design -- multi-model comparison runs 2-3 API calls per prompt, workflow execution calls per AI node, agent chat sends full conversation context |
 | **Open Source** | MIT License, public GitHub repository |
 
 ### Oxlo.ai API Usage Per Feature
@@ -518,14 +575,14 @@ After deploying an agent, you get an iframe snippet:
 | Workflow execution | 1 per AI node in graph |
 | Agent conversation turn | 1-5 calls (with tool routing) |
 | Content pipeline (5-stage) | 5 calls per run |
-| Batch content (N topics) | N Ã— stages per batch |
+| Batch content (N topics) | N x stages per batch |
 | **Typical session total** | **10-25+ calls** |
 
 ---
 
-## ðŸ“„ License
+## License
 
-This project is licensed under the **MIT License** â€” see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** -- see the [LICENSE](LICENSE) file for details.
 
 ```
 MIT License
@@ -546,13 +603,11 @@ copies or substantial portions of the Software.
 ---
 
 <p align="center">
-  Built with ðŸ’š for the <strong>OxBuild Hackathon</strong> by Oxlo.ai
+  Built with love for the <strong>OxBuild Hackathon</strong> by Oxlo.ai
 </p>
 
 <p align="center">
-  <a href="https://oxai-puce.vercel.app">Live Demo</a> â€¢
-  <a href="https://oxlo.ai">Oxlo.ai</a> â€¢
+  <a href="https://oxai-puce.vercel.app">Live Demo</a> |
+  <a href="https://oxlo.ai">Oxlo.ai</a> |
   <a href="https://github.com/panzauto46-bot/OxAI">GitHub</a>
 </p>
-
-
