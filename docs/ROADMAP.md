@@ -1,4 +1,4 @@
-﻿# OxAI - Development Roadmap
+# OxAI - Development Roadmap
 ## Visual AI Studio for Everyone | OxBuild by Oxlo.ai Hackathon
 
 **Deadline:** April 5, 2026  
@@ -133,7 +133,7 @@
 ### 4.1 Production Build and Deployment
 - [x] Fix all build warnings and errors
 - [x] Optimize bundle size
-- [x] Deploy to Vercel (Production URL: https://oxai-puce.vercel.app)
+- [x] Deploy to Vercel (Production URL: https://oxai-eight.vercel.app)
 - [x] Configure custom domain (if available) - N/A (no custom domain configured in current Vercel account)
 - [x] Test live deployment end-to-end
 - [x] Verify all 4 modules work on production
@@ -143,7 +143,7 @@
 - [x] Architecture diagram (Mermaid or image)
 - [x] Which Oxlo models were used and why
 - [x] How to run locally (npm install -> npm run dev)
-- [x] Live demo link (Vercel URL): https://oxai-puce.vercel.app
+- [x] Live demo link (Vercel URL): https://oxai-eight.vercel.app
 - [ ] Registered Oxlo.ai email
 - [ ] Screenshots / demo GIF
 - [x] Add LICENSE file (MIT)

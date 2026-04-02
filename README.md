@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://oxai-puce.vercel.app">Live Demo</a> |
+  <a href="https://oxai-eight.vercel.app">Live Demo</a> |
   <a href="#core-modules">Features</a> |
   <a href="#architecture">Architecture</a> |
   <a href="#quick-start">Quick Start</a> |
@@ -87,7 +87,7 @@ Teams can prototype and test AI automations without backend setup:
 
 ## Live Demo
 
-> **Production URL:** [https://oxai-puce.vercel.app](https://oxai-puce.vercel.app)
+> **Production URL:** [https://oxai-eight.vercel.app](https://oxai-eight.vercel.app)
 >
 > Latest deployment: April 2, 2026
 
@@ -430,7 +430,7 @@ npx vercel --prod --yes
 | Environment | URL |
 |-------------|-----|
 | Local | `http://localhost:3000/` (via `vercel dev`) |
-| Production | `https://oxai-puce.vercel.app/` |
+| Production | `https://oxai-eight.vercel.app/` |
 
 **Auth Flow:**
 
@@ -529,8 +529,8 @@ OxAI supports sharing workflows and agents via URL hash payloads:
 
 | Type | URL Format |
 |------|-----------|
-| Workflow | `https://oxai-puce.vercel.app/#workflow=<base64_payload>` |
-| Agent | `https://oxai-puce.vercel.app/#agent=<base64_payload>` |
+| Workflow | `https://oxai-eight.vercel.app/#workflow=<base64_payload>` |
+| Agent | `https://oxai-eight.vercel.app/#agent=<base64_payload>` |
 
 When opening these links, OxAI automatically switches to the relevant module and loads the shared configuration.
 
@@ -540,7 +540,7 @@ After deploying an agent, you get an iframe snippet:
 
 ```html
 <iframe
-  src="https://oxai-puce.vercel.app/#agent=<base64_payload>"
+  src="https://oxai-eight.vercel.app/#agent=<base64_payload>"
   width="420"
   height="640"
   style="border:1px solid #334155; border-radius:12px;"
@@ -553,7 +553,7 @@ After deploying an agent, you get an iframe snippet:
 
 **Hackathon:** OxBuild by Oxlo.ai
 **Deadline:** April 5, 2026
-**Live Demo:** [https://oxai-puce.vercel.app](https://oxai-puce.vercel.app)
+**Live Demo:** [https://oxai-eight.vercel.app](https://oxai-eight.vercel.app)
 
 ### Judging Alignment
 
@@ -607,7 +607,7 @@ copies or substantial portions of the Software.
 </p>
 
 <p align="center">
-  <a href="https://oxai-puce.vercel.app">Live Demo</a> |
+  <a href="https://oxai-eight.vercel.app">Live Demo</a> |
   <a href="https://oxlo.ai">Oxlo.ai</a> |
   <a href="https://github.com/panzauto46-bot/OxAI">GitHub</a>
 </p>
