@@ -1,9 +1,5 @@
 import {
-  Rocket,
-  Workflow,
-  Wand2,
   Bot,
-  FileText,
   Settings,
   LogOut,
   Sparkles,
@@ -13,11 +9,7 @@ import { useStore } from '../../store/useStore';
 import { cn } from '../../utils/cn';
 
 const menuItems = [
-  { id: 'quick', labelEn: 'Quick Builder', labelId: 'Quick Builder', icon: Rocket },
-  { id: 'workflow', labelEn: 'Workflow Builder', labelId: 'Workflow Builder', icon: Workflow },
-  { id: 'prompt', labelEn: 'Prompt Studio', labelId: 'Prompt Studio', icon: Wand2 },
   { id: 'agent', labelEn: 'Agent Builder', labelId: 'Agent Builder', icon: Bot },
-  { id: 'pipeline', labelEn: 'Content Pipeline', labelId: 'Content Pipeline', icon: FileText },
 ] as const;
 
 interface SidebarProps {
