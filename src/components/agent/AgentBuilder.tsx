@@ -15,6 +15,8 @@ import {
   Trash2,
   Plus,
   Copy,
+  Monitor,
+  Smartphone,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -157,6 +159,80 @@ function buildToolTraces(tools: string[], input: string): ToolTrace[] {
   return traces;
 }
 
+function extractCodeBlock(text: string, language: string): string {
+  const pattern = new RegExp(`\`\`\`${language}\\s*([\\s\\S]*?)\`\`\``, 'i');
+  const match = text.match(pattern);
+  return match?.[1]?.trim() || '';
+}
+
+function extractLikelyHtml(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return '';
+  if (/^<!doctype html>/i.test(trimmed) || /^<html[\s>]/i.test(trimmed)) return trimmed;
+  if (/<(main|section|div|header|footer|nav|article|button|input|form|h1|h2|p)\b/i.test(trimmed)) {
+    return trimmed;
+  }
+  return '';
+}
+
+function buildPreviewDocument(content: string): { srcDoc: string; code: string } | null {
+  const htmlBlock = extractCodeBlock(content, 'html');
+  const cssBlock = extractCodeBlock(content, 'css');
+  const jsBlock = extractCodeBlock(content, 'js');
+
+  const htmlSource = htmlBlock || extractLikelyHtml(content);
+  if (!htmlSource && !cssBlock && !jsBlock) return null;
+
+  if (/<!doctype html>/i.test(htmlSource) || /<html[\s>]/i.test(htmlSource)) {
+    return {
+      srcDoc: htmlSource,
+      code: htmlSource,
+    };
+  }
+
+  const srcDoc = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f6f7f9;
+      color: #111827;
+    }
+    ${cssBlock || ''}
+  </style>
+</head>
+<body>
+${htmlSource || '<main style="padding:24px"><p>No HTML code found.</p></main>'}
+  <script>
+    ${jsBlock || ''}
+  </script>
+</body>
+</html>`;
+
+  const codeParts = [];
+  if (htmlSource) {
+    codeParts.push(['```html', htmlSource, '```'].join('\n'));
+  }
+  if (cssBlock) {
+    codeParts.push(['```css', cssBlock, '```'].join('\n'));
+  }
+  if (jsBlock) {
+    codeParts.push(['```js', jsBlock, '```'].join('\n'));
+  }
+
+  return {
+    srcDoc,
+    code: codeParts.join('\n\n'),
+  };
+}
+
 export function AgentBuilder() {
   const {
     apiKey,
@@ -180,6 +256,15 @@ export function AgentBuilder() {
   const [chatInput, setChatInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [toolTraces, setToolTraces] = useState<ToolTrace[]>([]);
+  const [designMode, setDesignMode] = useState(false);
+  const [designTarget, setDesignTarget] = useState<'web' | 'mobile' | 'responsive'>('responsive');
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [previewSrcDoc, setPreviewSrcDoc] = useState('');
+  const [previewCode, setPreviewCode] = useState('');
+  const [previewStatus, setPreviewStatus] = useState(
+    'Enable Design Mode and ask your agent to generate UI/UX code to see live preview.'
+  );
+  const [previewCodeCopied, setPreviewCodeCopied] = useState(false);
   const [deployedLink, setDeployedLink] = useState('');
   const [embedSnippet, setEmbedSnippet] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
@@ -192,19 +277,40 @@ export function AgentBuilder() {
       .map((toolId) => availableTools.find((tool) => tool.id === toolId)?.name || toolId)
       .join(', ');
 
+    const designInstruction = designMode
+      ? [
+          'Design mode is ON. Act as a senior UI/UX designer and frontend engineer.',
+          `Primary design target: ${designTarget}.`,
+          'Return implementation in code blocks: ```html```, and include ```css``` / ```js``` when needed.',
+          'Prioritize modern visual hierarchy, responsive behavior, and production-ready component structure.',
+        ].join('\n')
+      : '';
+
     return [
       persona.trim() || 'You are a helpful AI assistant.',
       instructions.trim() || 'Answer clearly and directly.',
       `Enabled tools: ${activeTools || 'None'}.`,
       'If tool outputs are provided in the user message context, prioritize those outputs when answering.',
+      designInstruction,
     ].join('\n\n');
-  }, [persona, instructions, selectedTools]);
+  }, [persona, instructions, selectedTools, designMode, designTarget]);
 
   useEffect(() => {
     const validIds = new Set(availableModels.map((model) => model.id));
     if (availableModels.length === 0) return;
     setSelectedModel((previous) => (validIds.has(previous) ? previous : availableModels[0].id));
   }, [availableModels]);
+
+  useEffect(() => {
+    if (!designMode) {
+      setPreviewStatus('Design mode is off. Turn it on to generate and preview UI/UX layouts.');
+      return;
+    }
+
+    setPreviewStatus(
+      `Design mode is on (${designTarget}). Ask your agent to return HTML/CSS code and preview will auto-render.`
+    );
+  }, [designMode, designTarget]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -295,6 +401,12 @@ export function AgentBuilder() {
     setInstructions('');
     setSelectedTools([]);
     setSelectedModel(defaultModelId);
+    setDesignMode(false);
+    setDesignTarget('responsive');
+    setPreviewDevice('desktop');
+    setPreviewSrcDoc('');
+    setPreviewCode('');
+    setPreviewStatus('Enable Design Mode and ask your agent to generate UI/UX code to see live preview.');
     clearAgentMessages();
     setDeployedLink('');
     setEmbedSnippet('');
@@ -347,8 +459,21 @@ export function AgentBuilder() {
         title: 'Agent response failed',
         message: response.error,
       });
+      if (designMode) {
+        setPreviewStatus('Design preview failed to update because the latest response returned an error.');
+      }
     } else {
       addAgentMessage({ role: 'assistant', content: response.content });
+      if (designMode) {
+        const preview = buildPreviewDocument(response.content);
+        if (preview) {
+          setPreviewSrcDoc(preview.srcDoc);
+          setPreviewCode(preview.code);
+          setPreviewStatus('Preview updated from latest assistant response.');
+        } else {
+          setPreviewStatus('No HTML/CSS code detected. Ask the agent to return code blocks for preview.');
+        }
+      }
     }
 
     setIsLoading(false);
@@ -406,6 +531,17 @@ export function AgentBuilder() {
     addToast({
       type: 'success',
       title: 'Embed snippet copied',
+    });
+  };
+
+  const handleCopyPreviewCode = async () => {
+    if (!previewCode) return;
+    await navigator.clipboard.writeText(previewCode);
+    setPreviewCodeCopied(true);
+    setTimeout(() => setPreviewCodeCopied(false), 2000);
+    addToast({
+      type: 'success',
+      title: 'Preview code copied',
     });
   };
 
@@ -518,6 +654,37 @@ export function AgentBuilder() {
               options={modelOptions}
             />
 
+            <div className="rounded-lg border border-slate-700 bg-slate-900/40 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-white">UI/UX Design Mode</p>
+                  <p className="text-xs text-slate-400">Generate web/mobile UI code and render live preview.</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={designMode ? 'primary' : 'secondary'}
+                  onClick={() => setDesignMode((previous) => !previous)}
+                >
+                  {designMode ? 'On' : 'Off'}
+                </Button>
+              </div>
+
+              {designMode && (
+                <div className="mt-3">
+                  <Select
+                    label="Design Target"
+                    value={designTarget}
+                    onChange={(e) => setDesignTarget(e.target.value as 'web' | 'mobile' | 'responsive')}
+                    options={[
+                      { value: 'web', label: 'Web UI' },
+                      { value: 'mobile', label: 'Mobile UI' },
+                      { value: 'responsive', label: 'Responsive UI' },
+                    ]}
+                  />
+                </div>
+              )}
+            </div>
+
             <Textarea
               label="Persona"
               value={persona}
@@ -595,72 +762,138 @@ export function AgentBuilder() {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col bg-slate-950/50 min-h-0">
-          <div className="p-4 border-b border-slate-800">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-emerald-400" />
-              Test Agent
-            </h3>
-            <p className="text-sm text-slate-400">Try your agent in a live chat</p>
-            {toolTraces.length > 0 && (
-              <div className="mt-3 space-y-1">
-                {toolTraces.map((trace, index) => (
-                  <div key={`${trace.tool}-${index}`} className="text-xs rounded bg-slate-800/70 border border-slate-700 px-2 py-1">
-                    <span className="text-emerald-300">{trace.tool}:</span>{' '}
-                    <span className="text-slate-300">{trace.output}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="flex-1 min-w-0 flex flex-col xl:flex-row bg-slate-950/50">
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="p-4 border-b border-slate-800">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-emerald-400" />
+                Test Agent
+              </h3>
+              <p className="text-sm text-slate-400">Try your agent in a live chat</p>
+              {toolTraces.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  {toolTraces.map((trace, index) => (
+                    <div key={`${trace.tool}-${index}`} className="text-xs rounded bg-slate-800/70 border border-slate-700 px-2 py-1">
+                      <span className="text-emerald-300">{trace.tool}:</span>{' '}
+                      <span className="text-slate-300">{trace.output}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {agentMessages.length === 0 && (
-              <div className="text-center py-12">
-                <Bot className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-                <p className="text-slate-500">Start a conversation with your agent</p>
-              </div>
-            )}
-            {agentMessages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {agentMessages.length === 0 && (
+                <div className="text-center py-12">
+                  <Bot className="w-16 h-16 text-slate-700 mx-auto mb-4" />
+                  <p className="text-slate-500">Start a conversation with your agent</p>
+                </div>
+              )}
+              {agentMessages.map((message, index) => (
                 <div
-                  className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-                    message.role === 'user'
-                      ? 'bg-emerald-600 text-white rounded-br-md'
-                      : 'bg-slate-800 text-slate-200 rounded-bl-md'
-                  }`}
+                  key={index}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <div
+                    className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                      message.role === 'user'
+                        ? 'bg-emerald-600 text-white rounded-br-md'
+                        : 'bg-slate-800 text-slate-200 rounded-bl-md'
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-slate-800 px-4 py-3 rounded-2xl rounded-bl-md">
-                  <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-slate-800 px-4 py-3 rounded-2xl rounded-bl-md">
+                    <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
+                  </div>
                 </div>
-              </div>
-            )}
-            <div ref={chatEndRef} />
-          </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
 
-          <div className="p-4 border-t border-slate-800">
-            <div className="flex gap-2">
-              <Input
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Type a message... (use `calc:` or `summarize:` for tool routing)"
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                className="flex-1"
-              />
-              <Button onClick={handleSendMessage} disabled={isLoading}>
-                <Send className="w-4 h-4" />
-              </Button>
+            <div className="p-4 border-t border-slate-800">
+              <div className="flex gap-2">
+                <Input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Type a message... (use `calc:` or `summarize:` for tool routing)"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  className="flex-1"
+                />
+                <Button onClick={handleSendMessage} disabled={isLoading}>
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
+
+          <aside className="w-full xl:w-[420px] border-t xl:border-t-0 xl:border-l border-slate-800 flex flex-col bg-slate-900/50">
+            <div className="p-4 border-b border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-semibold text-white">Live Preview</h3>
+                  <p className="text-xs text-slate-400">Preview generated UI while agent is building.</p>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleCopyPreviewCode}
+                  disabled={!previewCode}
+                >
+                  <Copy className="w-4 h-4" />
+                  {previewCodeCopied ? 'Copied' : 'Copy Code'}
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={previewDevice === 'desktop' ? 'primary' : 'secondary'}
+                  onClick={() => setPreviewDevice('desktop')}
+                >
+                  <Monitor className="w-4 h-4" />
+                  Desktop
+                </Button>
+                <Button
+                  size="sm"
+                  variant={previewDevice === 'mobile' ? 'primary' : 'secondary'}
+                  onClick={() => setPreviewDevice('mobile')}
+                >
+                  <Smartphone className="w-4 h-4" />
+                  Mobile
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 min-h-[320px] p-4 overflow-auto">
+              {previewSrcDoc ? (
+                <div
+                  className={`mx-auto rounded-xl border border-slate-700 bg-white overflow-hidden shadow-xl ${
+                    previewDevice === 'mobile' ? 'w-[360px] max-w-full min-h-[640px]' : 'w-full min-h-[640px]'
+                  }`}
+                >
+                  <iframe
+                    title="Agent Design Preview"
+                    srcDoc={previewSrcDoc}
+                    sandbox="allow-scripts"
+                    className="w-full h-full min-h-[640px] bg-white"
+                  />
+                </div>
+              ) : (
+                <div className="h-full min-h-[260px] rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-400">
+                  Turn on Design Mode and ask agent to generate a UI layout. Preview will appear here automatically.
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-slate-800 px-4 py-3 text-xs text-slate-400">
+              {previewStatus}
+            </div>
+          </aside>
         </div>
       </div>
     </div>
