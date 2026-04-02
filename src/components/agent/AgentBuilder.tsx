@@ -449,10 +449,11 @@ export function AgentBuilder() {
       );
 
       if (source === 'manual') {
+        setChatInput(trimmedGoal);
         addToast({
           type: 'success',
           title: 'Agent updated',
-          message: `${blueprint.templateName} template applied.`,
+          message: `${blueprint.templateName} template applied. Prompt copied to chat box.`,
         });
       }
     },
@@ -853,7 +854,7 @@ export function AgentBuilder() {
                     disabled={agentGoalPrompt.trim().length < 3}
                   >
                     <WandSparkles className="w-4 h-4" />
-                    Apply Now
+                    Apply Setup
                   </Button>
                 </div>
                 <Textarea
@@ -865,6 +866,9 @@ export function AgentBuilder() {
                 <div className="rounded-lg border border-slate-700/70 bg-slate-900/40 px-3 py-2">
                   <p className="text-xs text-slate-300">{autoAgentStatus}</p>
                   <p className="text-[11px] text-slate-400 mt-1">Template: {lastTemplateName}</p>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    After apply, prompt is moved to chat input. Click Send to run the agent.
+                  </p>
                 </div>
               </div>
             </div>
