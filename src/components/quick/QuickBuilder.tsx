@@ -10,7 +10,6 @@ import {
   PencilLine,
   Sparkles,
   WandSparkles,
-  ArrowRight,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -126,7 +125,7 @@ function buildRequestPrompt({
 }
 
 export function QuickBuilder() {
-  const { apiKey, addToast, setActiveMode, setExperienceMode } = useStore();
+  const { apiKey, addToast } = useStore();
   const { models: availableModels, modelOptions, defaultModelId } = useAvailableModels(apiKey);
 
   const [selectedGoalId, setSelectedGoalId] = useState<GoalId>('content');
@@ -262,17 +261,6 @@ export function QuickBuilder() {
     });
   };
 
-  const handleOpenAdvanced = () => {
-    setExperienceMode('advanced');
-    setActiveMode('workflow');
-    window.location.hash = '#workflow';
-    addToast({
-      type: 'info',
-      title: 'Mode lanjutan aktif',
-      message: 'Semua fitur teknis sekarang ditampilkan.',
-    });
-  };
-
   return (
     <div className="h-full overflow-y-auto p-4 md:p-6">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -281,10 +269,6 @@ export function QuickBuilder() {
             <h2 className="text-2xl font-bold text-white">Quick Builder</h2>
             <p className="text-slate-400">Mode simple untuk user nol AI: isi kebutuhan, lihat preview, langsung pakai.</p>
           </div>
-          <Button variant="secondary" onClick={handleOpenAdvanced}>
-            Buka Mode Lanjutan
-            <ArrowRight className="w-4 h-4" />
-          </Button>
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
@@ -456,8 +440,8 @@ export function QuickBuilder() {
               <CardContent className="flex items-start gap-3 py-4">
                 <Sparkles className="h-5 w-5 text-emerald-300 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-white">Mau bikin alur lebih kompleks?</p>
-                  <p className="text-xs text-slate-400">Pindah ke mode lanjutan untuk Workflow Builder, Prompt Studio, Agent Builder, dan Content Pipeline.</p>
+                  <p className="text-sm font-medium text-white">Butuh fitur lebih detail?</p>
+                  <p className="text-xs text-slate-400">Menu lengkap tetap tersedia di sidebar: Workflow, Prompt, Agent, dan Content Pipeline.</p>
                 </div>
               </CardContent>
             </Card>

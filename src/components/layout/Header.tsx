@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { Key, X, Check, ExternalLink, PanelLeftOpen, Rocket } from 'lucide-react';
+import { Key, X, Check, ExternalLink, PanelLeftOpen } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -14,9 +14,6 @@ export function Header({ onOpenSidebar }: HeaderProps) {
     setApiKey,
     addToast,
     githubUser,
-    experienceMode,
-    setExperienceMode,
-    setActiveMode,
   } = useStore();
   const [showKeyInput, setShowKeyInput] = useState(false);
   const [tempKey, setTempKey] = useState(apiKey);
@@ -29,22 +26,6 @@ export function Header({ onOpenSidebar }: HeaderProps) {
       type: 'success',
       title: 'API key updated',
       message: normalizedKey ? 'Provider API key saved locally.' : 'API key cleared.',
-    });
-  };
-
-  const handleSwitchExperience = () => {
-    const next = experienceMode === 'beginner' ? 'advanced' : 'beginner';
-    setExperienceMode(next);
-    const nextStudio = next === 'beginner' ? 'quick' : 'workflow';
-    setActiveMode(nextStudio);
-    window.location.hash = `#${nextStudio}`;
-    addToast({
-      type: 'info',
-      title: next === 'beginner' ? 'Beginner mode active' : 'Advanced mode active',
-      message:
-        next === 'beginner'
-          ? 'UI disederhanakan untuk user baru.'
-          : 'Semua fitur teknis sudah terbuka.',
     });
   };
 
@@ -108,22 +89,14 @@ export function Header({ onOpenSidebar }: HeaderProps) {
             </Button>
           </div>
         ) : (
-          <>
-            <Button variant="ghost" size="sm" onClick={handleSwitchExperience}>
-              <Rocket className="w-4 h-4" />
-              <span className="hidden sm:inline">
-                {experienceMode === 'beginner' ? 'Advanced Mode' : 'Beginner Mode'}
-              </span>
-            </Button>
-            <Button
-              variant={apiKey ? 'secondary' : 'primary'}
-              size="sm"
-              onClick={() => setShowKeyInput(true)}
-            >
-              <Key className="w-4 h-4" />
-              <span className="hidden sm:inline">{apiKey ? 'API Key Set' : 'Set API Key'}</span>
-            </Button>
-          </>
+          <Button
+            variant={apiKey ? 'secondary' : 'primary'}
+            size="sm"
+            onClick={() => setShowKeyInput(true)}
+          >
+            <Key className="w-4 h-4" />
+            <span className="hidden sm:inline">{apiKey ? 'API Key Set' : 'Set API Key'}</span>
+          </Button>
         )}
       </div>
     </header>
