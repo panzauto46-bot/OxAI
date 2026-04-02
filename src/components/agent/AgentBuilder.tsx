@@ -245,6 +245,41 @@ ${htmlSource || '<main style="padding:24px"><p>No HTML code found.</p></main>'}
 
 type DesignTarget = 'web' | 'mobile' | 'responsive';
 
+function getDesignTargetLabel(target: DesignTarget): string {
+  if (target === 'mobile') return 'mobile-first app interface';
+  if (target === 'web') return 'desktop-first web interface';
+  return 'responsive interface (desktop and mobile)';
+}
+
+function buildDesignSystemInstruction(designTarget: DesignTarget): string {
+  return [
+    'Design mode is ON. You are both a senior UI/UX designer and frontend engineer.',
+    `Primary target: ${getDesignTargetLabel(designTarget)}.`,
+    'Do not return plain or generic UI. The visual direction must feel intentional and premium.',
+    'Always include these sections in this order:',
+    '1) Design Concept (style direction, user persona fit, UX rationale).',
+    '2) Feature Breakdown (main sections/components and interaction flow).',
+    '3) Implementation (full code).',
+    'Implementation rules:',
+    '- Always include at least one ```html``` block and one ```css``` block.',
+    '- Prefer custom CSS variables for color, spacing, radius, shadows, and typography scale.',
+    '- Use strong layout hierarchy, responsive behavior, and states (hover/focus/active).',
+    '- Avoid default/system-looking UI. Add visual depth using gradients, contrast, or surfaces.',
+    '- If useful, include a small ```js``` block for interactions.',
+  ].join('\n');
+}
+
+function buildDesignExecutionBrief(messageInput: string, designTarget: DesignTarget): string {
+  return [
+    'Design Execution Brief:',
+    `- User request: ${messageInput}`,
+    `- Output target: ${getDesignTargetLabel(designTarget)}`,
+    '- Deliver an implementation-ready UI concept with concrete structure.',
+    '- Include a clear feature structure (hero, nav, sections, CTA, forms/cards if relevant).',
+    '- Output must be renderable directly in preview using HTML/CSS code blocks.',
+  ].join('\n');
+}
+
 interface AgentBlueprint {
   name: string;
   persona: string;
@@ -410,14 +445,7 @@ export function AgentBuilder() {
       .map((toolId) => availableTools.find((tool) => tool.id === toolId)?.name || toolId)
       .join(', ');
 
-    const designInstruction = designMode
-      ? [
-          'Design mode is ON. Act as a senior UI/UX designer and frontend engineer.',
-          `Primary design target: ${designTarget}.`,
-          'Return implementation in code blocks: ```html```, and include ```css``` / ```js``` when needed.',
-          'Prioritize modern visual hierarchy, responsive behavior, and production-ready component structure.',
-        ].join('\n')
-      : '';
+    const designInstruction = designMode ? buildDesignSystemInstruction(designTarget) : '';
 
     return [
       persona.trim() || 'You are a helpful AI assistant.',
@@ -490,7 +518,7 @@ export function AgentBuilder() {
     }
 
     setPreviewStatus(
-      `Design mode is on (${designTarget}). Ask your agent to return HTML/CSS code and preview will auto-render.`
+      `Design mode is on (${designTarget}). The agent now outputs concept + feature plan + HTML/CSS implementation automatically.`
     );
   }, [designMode, designTarget]);
 
@@ -630,9 +658,13 @@ export function AgentBuilder() {
       .map((trace) => `[Tool: ${trace.tool}] ${trace.output}`)
       .join('\n');
 
-    const messageForModel = toolContext
+    const baseMessageForModel = toolContext
       ? `${messageInput}\n\nTool Outputs:\n${toolContext}`
       : messageInput;
+
+    const messageForModel = designMode
+      ? `${baseMessageForModel}\n\n${buildDesignExecutionBrief(messageInput, designTarget)}`
+      : baseMessageForModel;
 
     const messages = [
       { role: 'system' as const, content: generatedSystemPrompt },
@@ -643,7 +675,13 @@ export function AgentBuilder() {
       { role: 'user' as const, content: messageForModel },
     ];
 
-    const response = await callOxloAPI(apiKey, selectedModel, messages, 0.7);
+    const response = await callOxloAPI(
+      apiKey,
+      selectedModel,
+      messages,
+      designMode ? 0.85 : 0.7,
+      designMode ? 3200 : 2000
+    );
 
     if (response.error) {
       addAgentMessage({ role: 'assistant', content: `Error: ${response.error}` });
@@ -656,15 +694,52 @@ export function AgentBuilder() {
         setPreviewStatus('Design preview failed to update because the latest response returned an error.');
       }
     } else {
-      addAgentMessage({ role: 'assistant', content: response.content });
+      let assistantContent = response.content;
+      let preview = designMode ? buildPreviewDocument(response.content) : null;
+
+      if (designMode && !preview) {
+        const repairInstruction = [
+          'Reformat your previous answer into renderable code now.',
+          'Return in this exact order:',
+          '1) Design Concept (short).',
+          '2) Feature Breakdown (short).',
+          '3) Implementation with full ```html``` and ```css``` blocks (required).',
+          'Keep the output practical and visually strong, not generic.',
+        ].join('\n');
+
+        const repaired = await callOxloAPI(
+          apiKey,
+          selectedModel,
+          [
+            ...messages,
+            { role: 'assistant', content: response.content },
+            { role: 'user', content: repairInstruction },
+          ],
+          0.7,
+          3200
+        );
+
+        if (!repaired.error && repaired.content.trim()) {
+          const repairedPreview = buildPreviewDocument(repaired.content);
+          if (repairedPreview) {
+            assistantContent = repaired.content;
+            preview = repairedPreview;
+            setPreviewStatus('Preview auto-enhanced from structured design output.');
+          }
+        }
+      }
+
+      addAgentMessage({ role: 'assistant', content: assistantContent });
+
       if (designMode) {
-        const preview = buildPreviewDocument(response.content);
         if (preview) {
           setPreviewSrcDoc(preview.srcDoc);
           setPreviewCode(preview.code);
           setPreviewStatus('Preview updated from latest assistant response.');
         } else {
-          setPreviewStatus('No HTML/CSS code detected. Ask the agent to return code blocks for preview.');
+          setPreviewStatus(
+            'No renderable HTML/CSS detected yet. Ask: "Generate full HTML and CSS for this UI now."'
+          );
         }
       }
     }
