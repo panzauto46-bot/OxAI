@@ -1201,7 +1201,7 @@ export function AgentBuilder() {
 
   return (
     <div className="h-full flex flex-col xl:flex-row">
-      <div className="w-full xl:w-64 bg-slate-900/50 border-r border-b xl:border-b-0 border-slate-800 p-4 flex flex-col max-h-[38vh] xl:max-h-none">
+      <div className="hidden w-full xl:w-64 bg-slate-900/50 border-r border-b xl:border-b-0 border-slate-800 p-4 flex-col max-h-[38vh] xl:max-h-none">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-slate-300">My Agents</h3>
           <Button size="icon" variant="ghost" onClick={handleNewAgent}>
@@ -1266,7 +1266,7 @@ export function AgentBuilder() {
       </div>
 
       <div className="flex-1 flex flex-col 2xl:flex-row min-h-0">
-        <div className="w-full 2xl:w-[430px] border-r border-b 2xl:border-b-0 border-slate-800 p-4 md:p-6 overflow-y-auto">
+        <div className="hidden w-full 2xl:w-[430px] border-r border-b 2xl:border-b-0 border-slate-800 p-4 md:p-6 overflow-y-auto">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center">
               <Bot className="w-6 h-6 text-white" />

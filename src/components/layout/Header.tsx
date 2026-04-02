@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { Key, X, Check, ExternalLink, PanelLeftOpen } from 'lucide-react';
+import { Key, X, Check, PanelLeftOpen } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -22,8 +22,6 @@ export function Header({ onOpenSidebar }: HeaderProps) {
 
   const text = language === 'id'
     ? {
-        poweredBy: 'Didukung oleh',
-        visit: 'Kunjungi Oxlo.ai',
         placeholder: 'Masukkan API key provider',
         keyUpdatedTitle: 'API key diperbarui',
         keyUpdatedSaved: 'API key provider disimpan lokal.',
@@ -32,8 +30,6 @@ export function Header({ onOpenSidebar }: HeaderProps) {
         setApiKey: 'Set API Key',
       }
     : {
-        poweredBy: 'Powered by',
-        visit: 'Visit Oxlo.ai',
         placeholder: 'Enter provider API key',
         keyUpdatedTitle: 'API key updated',
         keyUpdatedSaved: 'Provider API key saved locally.',
@@ -63,17 +59,6 @@ export function Header({ onOpenSidebar }: HeaderProps) {
         >
           <PanelLeftOpen className="w-5 h-5" />
         </button>
-        <h2 className="text-xs md:text-sm font-medium text-slate-400 truncate">
-          {text.poweredBy} <span className="text-emerald-400 font-semibold">Oxlo.ai</span>
-        </h2>
-        <a
-          href="https://oxlo.ai"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hidden sm:flex text-xs text-slate-500 hover:text-emerald-400 items-center gap-1 transition-colors"
-        >
-          {text.visit} <ExternalLink className="w-3 h-3" />
-        </a>
       </div>
 
       <div className="flex items-center gap-2 md:gap-3">
